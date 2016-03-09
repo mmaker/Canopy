@@ -1,0 +1,34 @@
+@import "constants.less";
+@import "mixins/navbar.less";
+@import url(https://fonts.googleapis.com/css?family=Josefin+Sans:600);
+
+.navbar-default { .navbar-variant(@BarColor, #111); }
+
+body {
+    background: #fff;
+}
+
+.flex-container {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+}
+
+main {
+    margin-top: 50px;
+}
+
+.post {
+    width: 90%;
+    max-width: 600px;
+    font-family: 'Josefin Sans', sans-serif;
+    font-size: 1.2em;
+}
+
+.post-title {
+    font-size: 1.3em;
+}
+
+.navbar-toggle .icon-bar {
+    background-color: #222;
+}
