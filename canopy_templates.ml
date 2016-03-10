@@ -41,7 +41,9 @@ let template_main ~content ~title ~keys =
     </div>
   </nav>
   <main>
+  <div class='flex-container'>
       %s
+  </div>
 </main>
 </body>
 " title links content
@@ -49,7 +51,6 @@ let template_main ~content ~title ~keys =
 
 let template_article article =
   Printf.sprintf "
-  <div class='flex-container'>
     <div class='post'>
       <h2>
         %s
