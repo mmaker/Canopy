@@ -44,9 +44,11 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
     let get_articles keys =
       new_task () >>= fun t ->
       Lwt_list.map_s (fun key ->
-          Store.read_exn (t "Reading single post") key >>= fun str ->
-          let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
-          Canopy_types.article_of_string uri str |> Lwt.return)
+          Store.read (t "Reading single post") key >>= function
+          | None -> Lwt.return_none
+          | Some str ->
+            let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
+            Canopy_types.article_of_string uri str |> Lwt.return)
         keys in
 
     let respond_html ~status ~content ~title =
