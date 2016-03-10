@@ -26,6 +26,16 @@ Then you'll be able to launch Canopy using `./mir-canopy`, that will launch a se
 
 To configure how your Canopy instance should behave, you can edit `canopy_config.ml` before running `make`.
 
+```ocaml
+
+let config = {
+  remote_uri = "https://github.com/Engil/__blog.git"; (* the git repository *)
+  index_page = "Index.md"; (* the file that will serve as an index page *)
+  port = 8080; (* listening port *)
+  push_hook_path = "push"; (* set this to a random string that will be used to inform that new content is available in the git repository *)
+}
+```
+
 ## How Canopy works
 
 Canopy will require you to provide a Git remote uri. Once started, it will clone in-memory the repository content and serve the content in a more or less organized way.
@@ -42,6 +52,7 @@ The file syntax is just plain markdown, everything should be supported out-the-b
 ---
 title: A blog entry
 author: Me
+abstract: A simple line telling what this article is all about, will be displayed in listing pages. (optional)
 ---
 article content
 ```
@@ -53,4 +64,3 @@ If you don't respect this syntax, then the article won't show up in the resultin
  [irmin]: <https://github.com/mirage/irmin>
 
 
-Work in progress
