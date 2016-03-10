@@ -9,7 +9,7 @@ let template_links keys =
       "<li><a href='/%s'><span>%s</span></a></li>" link link in
   List.fold_left (fun str link -> str ^ (format_link link)) "" paths
 
-let template_main ~index ~content ~title ~keys =
+let template_main ~index ~name ~content ~title ~keys =
     let links = template_links keys in
     Printf.sprintf "
 <html>
@@ -32,7 +32,7 @@ let template_main ~index ~content ~title ~keys =
         <span class='icon-bar'></span>
         <span class='icon-bar'></span>
       </button>
-        <a class='navbar-brand' href='/%s'>Canopy blog engine</a>
+        <a class='navbar-brand' href='/%s'>%s</a>
       </div>
       <div class='collapse navbar-collapse collapse'>
         <ul class='nav navbar-nav navbar-right'>
@@ -47,7 +47,7 @@ let template_main ~index ~content ~title ~keys =
   </div>
 </main>
 </body>
-" title index links content
+" title index name links content
 
 
 let template_article article =
