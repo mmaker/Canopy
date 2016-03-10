@@ -8,7 +8,7 @@ Canopy is written in OCaml using MirageOS and [Irmin][irmin], but it is currentl
 
 ## Getting started
 
-You will need the latest version of `OCaml`, `opam` and `mirage` before starting. To setup a mirage environment, please refer to the mirage website.
+You will need at least `OCaml 4.02.3`, `opam 1.2` and `mirage 2.7.0` before starting. To setup a mirage environment, please refer to the mirage website.
 You'll also need `bower` and `less-css` if you want to compile and retrieve everything related to the blog-styling (not needed to just test things out).
 
 Checkout Canopy repository, then go inside:
@@ -62,5 +62,3 @@ If you don't respect this syntax, then the article won't show up in the resultin
  [decompress]: <https://github.com/oklm-wsh/Decompress>
  [mirage]: <http://mirage.io/>
  [irmin]: <https://github.com/mirage/irmin>
-
-
