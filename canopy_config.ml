@@ -1,5 +1,6 @@
 type t = {
   remote_uri : string;
+  name : string;
   index_page : string;
   port : int;
   push_hook_path: string;
@@ -8,6 +9,7 @@ type t = {
 let config = {
   remote_uri = "https://github.com/Engil/__blog.git";
   index_page = "Index";
+  name = "Canopy";
   port = 8080;
   push_hook_path = "push";
 }
