@@ -68,7 +68,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
       Lwt_io.printlf "Repository pulled" in
     pull () >>= fun _ ->
     let rec dispatcher uri =
-      let s_uri = Re_str.split (Re_str.regexp "/") uri in
+      let s_uri = Re_str.split (Re_str.regexp "/") (Uri.pct_decode uri) in
       match s_uri with
       | "static"::_ ->
         begin
