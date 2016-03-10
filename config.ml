@@ -5,12 +5,12 @@ let stack console = socket_stackv4 console [Ipaddr.V4.any]
 let disk = crunch "./disk"
 
 let main =
-  let libraries = ["irmin.git"; "mirage-http"; "irmin.mirage";"tls.mirage";] in
+  let libraries = ["irmin.git"; "cow"; "mirage-http"; "irmin.mirage";"tls.mirage";] in
   let libraries = if get_mode () = `Xen then libraries else "irmin.unix" :: libraries in
   foreign
     ~libraries
     ~deps:[abstract nocrypto]
-    ~packages:["irmin"; "mirage-http"; "mirage-flow";"tls";
+    ~packages:["irmin"; "mirage-http"; "mirage-flow";"tls";"cow";
                "mirage-types-lwt"; "channel"; "git"; "mirage-git"; "git-unix";"re";"cohttp"]
     "Canopy_main.Main" (console @-> resolver @-> conduit @-> http @-> kv_ro @-> job)
 

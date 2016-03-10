@@ -21,6 +21,12 @@ let article_of_string uri str =
     let s_str = Re_str.split r_meta str in
     match s_str with
     | [meta; content] ->
+      let content =
+        try
+          Cow.Markdown.of_string content |> Cow.Html.to_string
+      with
+      | _ -> content
+      in
       let assoc = meta_assoc meta in
       let author = List.assoc "author" assoc in
       let title = List.assoc "title" assoc in
