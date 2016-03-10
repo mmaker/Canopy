@@ -18,6 +18,9 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
 
   let start console res ctx http disk _ =
 
+    let open Canopy_config in
+    let open Canopy_types in
+
     let module Hash = Irmin.Hash.SHA1 in
     let module Context =
       ( struct
@@ -27,8 +30,8 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
     let module Mirage_git_memory = Irmin_mirage.Irmin_git.Memory(Context)(Git_unix.Zlib) in
     let module Store = Mirage_git_memory(Irmin.Contents.String)(Irmin.Ref.String)(Hash) in
     let module Sync = Irmin.Sync(Store) in
-    let config = Irmin_mem.config () in
-    let new_task _ = Store.Repo.create config >>= Store.master task in
+    let store_config = Irmin_mem.config () in
+    let new_task _ = Store.Repo.create store_config >>= Store.master task in
 
     let upstream = Irmin.remote_uri Canopy_config.config.remote_uri in
 
@@ -101,6 +104,6 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
       let cid = Cohttp.Connection.to_string conn_id in
       C.log console (Printf.sprintf "conn %s closed" cid)
     in
-    http (`TCP 8080) (S.make ~conn_closed ~callback ())
+    http (`TCP Canopy_config.config.port) (S.make ~conn_closed ~callback ())
 
 end
