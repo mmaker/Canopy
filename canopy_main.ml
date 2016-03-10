@@ -52,15 +52,18 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
     let respond_html ~status ~content ~title =
       new_task () >>= fun t ->
       Store.list (t "Reading posts") [] >>= fun keys ->
-      let body = Canopy_templates.template_main ~content ~title ~keys in
+      let index = Canopy_config.config.index_page in
+      let body = Canopy_templates.template_main ~index ~content ~title ~keys in
       S.respond_string ~status ~body () in
 
     new_task () >>= fun t ->
     let pull _ =
+      Lwt_io.printlf "Pulling repository" >>= fun _ ->
       Lwt.catch
         (fun () -> Sync.pull_exn (t "Updating") upstream `Update)
         (fun e -> Lwt_io.printlf "Fail pull %s: %s"
-            Canopy_config.config.remote_uri (Printexc.to_string e)) in
+            Canopy_config.config.remote_uri (Printexc.to_string e)) >>= fun _ ->
+      Lwt_io.printlf "Repository pulled" in
     pull () >>= fun _ ->
     let rec dispatcher uri =
       let s_uri = Re_str.split (Re_str.regexp "/") uri in
