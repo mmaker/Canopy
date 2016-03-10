@@ -18,7 +18,7 @@ let meta_assoc str =
 let article_of_string uri str =
   try
     let r_meta = Re_str.regexp "---" in
-    let s_str = Re_str.split r_meta str in
+    let s_str = Re_str.bounded_split r_meta str 2 in
     match s_str with
     | [meta; content] ->
       let content =
