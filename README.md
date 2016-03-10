@@ -59,6 +59,12 @@ article content
 
 If you don't respect this syntax, then the article won't show up in the resulting website.
 
+## Updating the blog content
+In order to keep your blog up-to-date, you need to tell the unikernel that something was pushed in the git repository.
+Canopy use an URL defined in canopy_config.ml, who trigger a pull when it receive a HTTP request.
+If you are using github, you can then simply set a webhook for push events on your blog's repository, and then wherever you push new content, your blog state will be updated.
+
+
  [decompress]: <https://github.com/oklm-wsh/Decompress>
  [mirage]: <http://mirage.io/>
  [irmin]: <https://github.com/mirage/irmin>
