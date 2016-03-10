@@ -2,6 +2,8 @@ type article = {
   title : string;
   content : string;
   author : string;
+  abstract : string option;
+  uri : string;
 }
 
 let meta_assoc str =
@@ -13,7 +15,7 @@ let meta_assoc str =
       let value = Re_str.matched_group 2 meta in
       key, value)
 
-let article_of_string str =
+let article_of_string uri str =
   try
     let r_meta = Re_str.regexp "---" in
     let s_str = Re_str.split r_meta str in
@@ -22,7 +24,12 @@ let article_of_string str =
       let assoc = meta_assoc meta in
       let author = List.assoc "author" assoc in
       let title = List.assoc "title" assoc in
-      Some {title; content; author}
+      let abstract =
+        try
+          Some (List.assoc "abstract" assoc)
+        with
+        | Not_found -> None in
+      Some {title; content; author; uri; abstract}
     | _ -> None
   with
   | _ -> None

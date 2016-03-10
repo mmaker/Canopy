@@ -32,11 +32,19 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
 
     let upstream = Irmin.remote_uri Canopy_config.config.remote_uri in
 
-    let get_posts _ =
+    let flatten_option_list l =
+      List.fold_left
+        (fun xs x -> match x with
+           | None -> xs
+           | Some x -> x::xs) [] l in
+
+    let get_articles keys =
       new_task () >>= fun t ->
-      Store.list (t "Reading posts") ["posts"] >>= fun keys ->
       Lwt_list.map_s (fun key ->
-          Store.read_exn (t "Reading single post") key) keys in
+          Store.read_exn (t "Reading single post") key >>= fun str ->
+          let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
+          Canopy_types.article_of_string uri str |> Lwt.return)
+        keys in
 
     let respond_html ~status ~content ~title =
       new_task () >>= fun t ->
@@ -49,9 +57,6 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
       (fun () -> Sync.pull_exn (t "Updating") upstream `Update)
       (fun e -> Lwt_io.printlf "Fail pull %s: %s"
           Canopy_config.config.remote_uri (Printexc.to_string e)) >>= fun _ ->
-
-    let index_content posts = "index" in
-
 
     let rec dispatcher uri =
       let s_uri = Re_str.split (Re_str.regexp "/") uri in
@@ -66,10 +71,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
         end
 
       | [] ->
-        get_posts () >>= fun posts ->
-        let content = index_content posts in
-        respond_html ~content ~title:"Index" ~status:`OK
-
+        dispatcher Canopy_config.config.index_page
       | key ->
         begin
           Store.read (t "Read post") key >>= fun m_body ->
@@ -79,9 +81,11 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
               if (List.length keys) = 0 then
                 S.respond_string ~status:`Not_found ~body:"Not found" ()
               else
-                S.respond_string ~status:`Not_found ~body:"Listing" ()
+                get_articles keys >>= fun articles ->
+                let content = flatten_option_list articles |> Canopy_templates.template_listing in
+                respond_html ~status:`OK ~title:"Listing" ~content
             | Some article ->
-                match Canopy_types.article_of_string article with
+                match Canopy_types.article_of_string uri article with
                 | None ->
                   S.respond_string ~status:`Not_found ~body:"Something really bad" ()
                 | Some article ->
