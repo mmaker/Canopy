@@ -14,6 +14,7 @@ let template_main ~content ~title ~keys =
     Printf.sprintf "
 <html>
 <head>
+<meta charset='UTF-8'>
 <title>%s</title>
 <link rel='stylesheet' href='/static/bower/bootstrap/dist/css/bootstrap.min.css'>
 <link rel='stylesheet' href='/static/css/style.css'>
