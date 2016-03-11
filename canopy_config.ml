@@ -1,6 +1,6 @@
 type t = {
   remote_uri : string;
-  name : string;
+  blog_name : string;
   index_page : string;
   port : int;
   push_hook_path: string;
@@ -9,7 +9,7 @@ type t = {
 let config () = {
   remote_uri = Key_gen.remote ();
   index_page = Key_gen.index ();
-  name = "Canopy";
+  blog_name = Key_gen.name ();
   port = Key_gen.port ();
-  push_hook_path = "push";
+  push_hook_path = Key_gen.push_hook ();
 }

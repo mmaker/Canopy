@@ -56,7 +56,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
       new_task () >>= fun t ->
       Store.list (t "Reading posts") [] >>= fun keys ->
       let index = config.index_page in
-      let name = config.name in
+      let name = config.blog_name in
       let body = Canopy_templates.template_main ~index ~content ~name ~title ~keys in
       S.respond_string ~status ~body () in
 
