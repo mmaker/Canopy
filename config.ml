@@ -4,6 +4,10 @@ let stack console = socket_stackv4 console [Ipaddr.V4.any]
 
 let disk = crunch "./disk"
 
+let remote_k =
+  let doc = Key.Arg.info ~doc:"Remote repository to fetch content." ["r"; "remote"] in
+  Key.(create "remote" Arg.(opt string "https://github.com/Engil/__blog.git" doc))
+
 let main =
   let libraries = ["irmin.git"; "cow"; "mirage-http"; "irmin.mirage";"tls.mirage";] in
   let libraries = if get_mode () = `Xen then libraries else "irmin.unix" :: libraries in
