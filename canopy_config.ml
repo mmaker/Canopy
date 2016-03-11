@@ -6,10 +6,10 @@ type t = {
   push_hook_path: string;
 }
 
-let config = {
-  remote_uri = "https://github.com/Engil/__blog.git";
-  index_page = "Index";
+let config () = {
+  remote_uri = Key_gen.remote ();
+  index_page = Key_gen.index ();
   name = "Canopy";
-  port = 8080;
+  port = Key_gen.port ();
   push_hook_path = "push";
 }

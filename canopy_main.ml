@@ -31,9 +31,10 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
     let module Store = Mirage_git_memory(Irmin.Contents.String)(Irmin.Ref.String)(Hash) in
     let module Sync = Irmin.Sync(Store) in
     let store_config = Irmin_mem.config () in
+    let config = Canopy_config.config () in
     let new_task _ = Store.Repo.create store_config >>= Store.master task in
 
-    let upstream = Irmin.remote_uri Canopy_config.config.remote_uri in
+    let upstream = Irmin.remote_uri config.remote_uri in
 
     let flatten_option_list l =
       List.fold_left
@@ -54,8 +55,8 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
     let respond_html ~status ~content ~title =
       new_task () >>= fun t ->
       Store.list (t "Reading posts") [] >>= fun keys ->
-      let index = Canopy_config.config.index_page in
-      let name = Canopy_config.config.name in
+      let index = config.index_page in
+      let name = config.name in
       let body = Canopy_templates.template_main ~index ~content ~name ~title ~keys in
       S.respond_string ~status ~body () in
 
@@ -65,7 +66,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
       Lwt.catch
         (fun () -> Sync.pull_exn (t "Updating") upstream `Update)
         (fun e -> Lwt_io.printlf "Fail pull %s: %s"
-            Canopy_config.config.remote_uri (Printexc.to_string e)) >>= fun _ ->
+            config.remote_uri (Printexc.to_string e)) >>= fun _ ->
       Lwt_io.printlf "Repository pulled" in
     pull () >>= fun _ ->
     let rec dispatcher uri =
@@ -81,8 +82,8 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
         end
 
       | [] ->
-        dispatcher Canopy_config.config.index_page
-      | uri::[] when uri = Canopy_config.config.push_hook_path ->
+        dispatcher config.index_page
+      | uri::[] when uri = config.push_hook_path ->
         pull () >>= fun _ ->
         S.respond_string ~status:`OK ~body:"" ()
       | key ->
@@ -114,6 +115,6 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
       let cid = Cohttp.Connection.to_string conn_id in
       C.log console (Printf.sprintf "conn %s closed" cid)
     in
-    http (`TCP Canopy_config.config.port) (S.make ~conn_closed ~callback ())
+    http (`TCP config.port) (S.make ~conn_closed ~callback ())
 
 end
