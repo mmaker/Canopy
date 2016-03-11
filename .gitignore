@@ -1,0 +1,16 @@
+_build/
+disk/
+
+key_gen.ml
+main.ml
+static1.ml
+static1.mli
+
+Makefile
+log
+
+canopy.x[el]
+canopy.x[el].in
+canopy_libvirt.xml
+main.native
+mir-canopy
