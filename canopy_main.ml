@@ -62,12 +62,13 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
 
     new_task () >>= fun t ->
     let pull _ =
-      Lwt_io.printlf "Pulling repository" >>= fun _ ->
+      Lwt.return (C.log console "Pulling repository") >>= fun _ ->
       Lwt.catch
         (fun () -> Sync.pull_exn (t "Updating") upstream `Update)
-        (fun e -> Lwt_io.printlf "Fail pull %s: %s"
-            config.remote_uri (Printexc.to_string e)) >>= fun _ ->
-      Lwt_io.printlf "Repository pulled" in
+        (fun e ->
+         Lwt.return (C.log_s console "Fail pull") >>= fun _ ->
+         Lwt.return (C.log console "Repository pulled"))
+    in
     pull () >>= fun _ ->
     let rec dispatcher uri =
       let s_uri = Re_str.split (Re_str.regexp "/") (Uri.pct_decode uri) in
