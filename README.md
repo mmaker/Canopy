@@ -22,19 +22,8 @@ mirage configure --unix
 make
 ```
 
-Then you'll be able to launch Canopy using `./mir-canopy`, that will launch a server listening on port `8080` by default.
-
-To configure how your Canopy instance should behave, you can edit `canopy_config.ml` before running `make`.
-
-```ocaml
-
-let config = {
-  remote_uri = "https://github.com/Engil/__blog.git"; (* the git repository *)
-  index_page = "Index.md"; (* the file that will serve as an index page *)
-  port = 8080; (* listening port *)
-  push_hook_path = "push"; (* set this to a random string that will be used to inform that new content is available in the git repository *)
-}
-```
+Then you'll be able to launch Canopy using `./mir-canopy -r https://github.com/Engil/__blog -i Index -p 8080`, that will launch a server using the specified URL as the git remote, Index as the default page rendered on the blog (it must exist within the repository) and 8080 is the listening port.
+You can see more options by running `./mir-canopy --help`.
 
 ## How Canopy works
 
