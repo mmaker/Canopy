@@ -27,7 +27,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
         let v _ = Lwt.return_some (res, ctx)
       end : Irmin_mirage.CONTEXT)
     in
-    let module Mirage_git_memory = Irmin_mirage.Irmin_git.Memory(Context)(Git_unix.Zlib) in
+    let module Mirage_git_memory = Irmin_mirage.Irmin_git.Memory(Context)(Inflator) in
     let module Store = Mirage_git_memory(Irmin.Contents.String)(Irmin.Ref.String)(Hash) in
     let module Sync = Irmin.Sync(Store) in
     let store_config = Irmin_mem.config () in

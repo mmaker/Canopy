@@ -25,7 +25,14 @@ let remote_k =
   Key.(create "remote" Arg.(opt string "https://github.com/Engil/__blog.git" doc))
 
 let main =
-  let libraries = ["irmin.git"; "cow"; "mirage-http"; "irmin.mirage";"tls.mirage";] in
+  let libraries = [
+      "cow";
+      "decompress";
+      "irmin.git";
+      "irmin.mirage";
+      "mirage-http";
+      "tls.mirage";
+    ] in
   let libraries = if get_mode () = `Xen then libraries else "irmin.unix" :: libraries in
   let keys = Key.([
                      abstract index_k;
@@ -38,7 +45,7 @@ let main =
     ~libraries
     ~deps:[abstract nocrypto]
     ~keys:keys
-    ~packages:["irmin"; "mirage-http"; "mirage-flow"; "tls"; "cow";
+    ~packages:["decompress";"irmin"; "mirage-http"; "mirage-flow"; "tls"; "cow";
                "mirage-types-lwt"; "channel"; "git"; "mirage-git"; "git-unix"; "re"; "cohttp"]
     "Canopy_main.Main" (console @-> resolver @-> conduit @-> http @-> kv_ro @-> job)
 
