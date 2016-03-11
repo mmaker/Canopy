@@ -8,8 +8,8 @@ type t = {
 
 let config () = {
   remote_uri = Key_gen.remote ();
-  index_page = "Index";
+  index_page = Key_gen.index ();
   name = "Canopy";
-  port = 8080;
+  port = Key_gen.port ();
   push_hook_path = "push";
 }
