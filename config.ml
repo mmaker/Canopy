@@ -1,6 +1,9 @@
 open Mirage
 
-let disk = crunch "./disk"
+let disk =
+  let fs_key = Key.(value @@ kv_ro ()) in
+  let fat_ro dir = generic_kv_ro ~key:fs_key dir in
+  fat_ro "./disk"
 
 
 (* Command-line options *)
