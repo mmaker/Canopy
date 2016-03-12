@@ -20,6 +20,7 @@ let template_main ~index ~name ~content ~title ~keys =
 <link rel='stylesheet' href='/static/css/style.css'>
 <script src='/static/bower/jquery/dist/jquery.min.js'></script>
 <script src='/static/bower/bootstrap/dist/js/bootstrap.min.js'></script>
+<script src='/static/bower/MathJax/MathJax.js'></script>
 </head>
 
 <body>
