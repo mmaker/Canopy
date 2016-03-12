@@ -2,6 +2,9 @@ open Mirage
 
 let disk = crunch "./disk"
 
+
+(* Command-line options *)
+
 let index_k =
   let doc = Key.Arg.info ~doc:"Index file name in remote." ["i"; "index"] in
   Key.(create "index" Arg.(opt string "Index" doc))
@@ -22,32 +25,46 @@ let remote_k =
   let doc = Key.Arg.info ~doc:"Remote repository to fetch content." ["r"; "remote"] in
   Key.(create "remote" Arg.(opt string "https://github.com/Engil/__blog.git" doc))
 
+
+(* Dependencies *)
+
+let libraries = [
+    "cow";
+    "decompress";
+    "irmin.mirage";
+    "irmin.git";
+    "mirage-http";
+    "tls.mirage";
+  ]
+
+let packages = [
+    "cow";
+    "decompress";
+    "irmin";
+    "mirage-http";
+    "mirage-flow";
+    "tls";
+    "mirage-types-lwt";
+    "channel";
+    "mirage-git";
+    "re";
+    "cohttp"
+  ]
+
+
+(* Network stack *)
+
+let stack =
+  match get_mode () with
+  | `Xen -> generic_stackv4 default_console tap0
+  | `Unix -> socket_stackv4 default_console [Ipaddr.V4.any]
+
+let conduit = conduit_direct ~tls:true stack
+let http_srv = http_server conduit
+let res_dns = resolver_dns stack
+
+
 let main =
-  let libraries = [
-      "cow";
-      "decompress";
-      "irmin.mirage";
-      "irmin.git";
-      "mirage-http";
-      "tls.mirage";
-    ] in
-  let libraries = if get_mode () = `Xen then libraries else "irmin.unix" :: libraries in
-
-  let packages = [
-      "cow";
-      "decompress";
-      "irmin";
-      "mirage-http";
-      "mirage-flow";
-      "tls";
-      "mirage-types-lwt";
-      "channel";
-      "mirage-git";
-      "re";
-      "cohttp"
-    ] in
-  let packages = if get_mode () = `Xen then "mirage-xen" :: packages else "git-unix" :: packages in
-
   let keys = Key.([
                      abstract index_k;
                      abstract name_k;
@@ -61,15 +78,6 @@ let main =
     ~keys
     ~packages
     "Canopy_main.Main" (console @-> resolver @-> conduit @-> http @-> kv_ro @-> job)
-
-let stack =
-  match get_mode () with
-  | `Xen -> generic_stackv4 default_console tap0
-  | `Unix -> socket_stackv4 default_console [Ipaddr.V4.any]
-
-let conduit = conduit_direct ~tls:true stack
-let http_srv = http_server conduit
-let res_dns = resolver_dns stack
 
 let () =
   register "canopy" [
