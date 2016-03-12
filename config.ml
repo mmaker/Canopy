@@ -59,8 +59,8 @@ let stack =
   | `Xen -> generic_stackv4 default_console tap0
   | `Unix -> socket_stackv4 default_console [Ipaddr.V4.any]
 
-let conduit = conduit_direct ~tls:true stack
-let http_srv = http_server conduit
+let conduit_d = conduit_direct ~tls:true stack
+let http_srv = http_server conduit_d
 let res_dns = resolver_dns stack
 
 
@@ -81,5 +81,5 @@ let main =
 
 let () =
   register "canopy" [
-    main $ default_console $ res_dns $ conduit $ http_srv $ disk
+    main $ default_console $ res_dns $ conduit_d $ http_srv $ disk
   ]
