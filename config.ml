@@ -57,7 +57,7 @@ let packages = [
 let stack =
   match get_mode () with
   | `Xen -> generic_stackv4 default_console tap0
-  | `Unix -> socket_stackv4 default_console [Ipaddr.V4.any]
+  | `Unix | `MacOSX -> socket_stackv4 default_console [Ipaddr.V4.any]
 
 let conduit_d = conduit_direct ~tls:true stack
 let http_srv = http_server conduit_d
