@@ -1,4 +1,5 @@
 open Canopy_types
+open Canopy_config
 
 let template_links keys =
   let paths = List.map (function
@@ -9,8 +10,12 @@ let template_links keys =
       "<li><a href='/%s'><span>%s</span></a></li>" link link in
   List.fold_left (fun str link -> str ^ (format_link link)) "" paths
 
-let template_main ~index ~name ~content ~title ~keys =
-    let links = template_links keys in
+let script_mathjax =
+  "<script src='/static/bower/MathJax/MathJax.js'></script>"
+
+let template_main ~config ~content ~title ~keys =
+  let links = template_links keys in
+  let mathjax = if config.mathjax then script_mathjax else "" in
     Printf.sprintf "
 <html>
 <head>
@@ -20,7 +25,7 @@ let template_main ~index ~name ~content ~title ~keys =
 <link rel='stylesheet' href='/static/css/style.css'>
 <script src='/static/bower/jquery/dist/jquery.min.js'></script>
 <script src='/static/bower/bootstrap/dist/js/bootstrap.min.js'></script>
-<script src='/static/bower/MathJax/MathJax.js'></script>
+%s
 </head>
 
 <body>
@@ -48,7 +53,7 @@ let template_main ~index ~name ~content ~title ~keys =
   </div>
 </main>
 </body>
-" title index name links content
+" title mathjax config.index_page config.blog_name links content
 
 
 let template_article article =

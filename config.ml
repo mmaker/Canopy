@@ -28,6 +28,9 @@ let remote_k =
   let doc = Key.Arg.info ~doc:"Remote repository to fetch content." ["r"; "remote"] in
   Key.(create "remote" Arg.(opt string "https://github.com/Engil/__blog.git" doc))
 
+let mathjax_k =
+  let doc = Key.Arg.info ~doc:"Enable mathjax" ["mathjax"; "m"] in
+  Key.(create "mathjax" Arg.(flag doc))
 
 (* Dependencies *)
 
@@ -73,7 +76,8 @@ let main =
                      abstract name_k;
                      abstract port_k;
                      abstract push_hook_k;
-                     abstract remote_k
+                     abstract remote_k;
+                     abstract mathjax_k
                    ]) in
   foreign
     ~libraries
