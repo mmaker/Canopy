@@ -6,6 +6,8 @@ type article = {
   uri : string;
 }
 
+type page = [`Article of article | `Binary of bytes]
+
 let meta_assoc str =
   Re_str.split (Re_str.regexp "\n") str |>
   List.map (fun meta ->
@@ -15,8 +17,14 @@ let meta_assoc str =
       let value = Re_str.matched_group 2 meta in
       key, value)
 
+let endswith s t =
+  let slen = Bytes.length s in
+  let tlen = Bytes.length t in
+  Bytes.sub s (slen - tlen) tlen = t
+
 let article_of_string uri str =
-  try
+  if endswith uri "jpg" then `Binary str
+  else try
     let r_meta = Re_str.regexp "---" in
     let s_str = Re_str.bounded_split r_meta str 2 in
     match s_str with
@@ -34,8 +42,9 @@ let article_of_string uri str =
         try
           Some (List.assoc "abstract" assoc)
         with
-        | Not_found -> None in
-      Some {title; content; author; uri; abstract}
-    | _ -> None
+        | Not_found -> None
+      in
+      `Article {title; content; author; uri; abstract}
+    | _ -> failwith "Failure reading article."
   with
-  | _ -> None
+  | _ -> failwith "Failure reading article."

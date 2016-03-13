@@ -27,7 +27,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
         let v _ = Lwt.return_some (res, ctx)
       end : Irmin_mirage.CONTEXT)
     in
-    let module Mirage_git_memory = Irmin_mirage.Irmin_git.Memory(Context)(Inflator) in
+    let module Mirage_git_memory = Irmin_mirage.Irmin_git.Memory(Context)(Git_unix.Zlib) in
     let module Store = Mirage_git_memory(Irmin.Contents.String)(Irmin.Ref.String)(Hash) in
     let module Sync = Irmin.Sync(Store) in
     let store_config = Irmin_mem.config () in
@@ -49,7 +49,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
           | None -> Lwt.return_none
           | Some str ->
             let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
-            Canopy_types.article_of_string uri str |> Lwt.return)
+            Some (Canopy_types.article_of_string uri str) |> Lwt.return)
         keys in
 
     let respond_html ~status ~content ~title =
@@ -85,27 +85,28 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
         end
 
       | [] ->
-        dispatcher config.index_page
+         dispatcher config.index_page
       | uri::[] when uri = config.push_hook_path ->
-        pull () >>= fun _ ->
-        S.respond_string ~status:`OK ~body:"" ()
+         pull () >>= fun _ ->
+         S.respond_string ~status:`OK ~body:"" ()
       | key ->
         begin
           Store.read (t "Read post") key >>= fun m_body ->
           match m_body with
             | None ->
               Store.list (t "Read subfolders") key >>= fun keys ->
-              if (List.length keys) = 0 then
+              get_articles keys >>= fun articles ->
+              if (List.length articles = 0) then
                 S.respond_string ~status:`Not_found ~body:"Not found" ()
               else
-                get_articles keys >>= fun articles ->
-                let content = flatten_option_list articles |> Canopy_templates.template_listing in
-                respond_html ~status:`OK ~title:"Listing" ~content
+                 let content = flatten_option_list articles |>
+                                 Canopy_templates.template_listing in
+                 respond_html ~status:`OK ~title:"Listing" ~content
             | Some article ->
-                match Canopy_types.article_of_string uri article with
-                | None ->
-                  S.respond_string ~status:`Not_found ~body:"Something really bad" ()
-                | Some article ->
+               match Canopy_types.article_of_string uri article with
+               | `Binary blob ->
+                  S.respond_string ~status:`OK ~body:blob ()
+               | `Article article ->
                   let content = Canopy_templates.template_article article in
                   respond_html ~status:`OK ~title:article.title ~content
         end in

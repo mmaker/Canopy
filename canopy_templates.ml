@@ -65,20 +65,24 @@ let template_article article =
     </div>
 " article.title article.author article.content
 
-let template_listing_entry article =
-  let abstract = match article.abstract with
-  | None -> ""
-  | Some abstract -> Printf.sprintf
-                       "<p class='list-group-item-text abstract'>%s</p>" abstract in
- Printf.sprintf
- "
+let template_listing_entry page =
+  match page with
+  | `Binary _ -> ""
+  | `Article article ->
+     let abstract = match article.abstract with
+       | None -> ""
+       | Some abstract ->
+          Printf.sprintf
+            "<p class='list-group-item-text abstract'>%s</p>" abstract in
+     Printf.sprintf
+"
 <a href='%s' class='list-group-item'>
 <h4 class='list-group-item-heading'>%s</h4>
 <span class='author'>Written by %s</span>
 <br />
 %s
 </a>
-  " article.uri article.title article.author abstract
+" article.uri article.title article.author abstract
 
 let template_listing articles =
   let entries = List.fold_left (fun s article ->

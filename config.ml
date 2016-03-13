@@ -36,6 +36,7 @@ let libraries = [
     "decompress";
     "irmin.mirage";
     "irmin.git";
+    "git.unix";
     "mirage-http";
     "tls.mirage";
   ]
