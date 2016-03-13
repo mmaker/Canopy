@@ -64,10 +64,12 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
     let pull _ =
       Lwt.return (C.log console "Pulling repository") >>= fun _ ->
       Lwt.catch
-        (fun () -> Sync.pull_exn (t "Updating") upstream `Update)
-        (fun e ->
-         Lwt.return (C.log_s console "Fail pull") >>= fun _ ->
+        (fun () ->
+         Sync.pull_exn (t "Updating") upstream `Update >>= fun _ ->
          Lwt.return (C.log console "Repository pulled"))
+        (fun e ->
+         let msg = Printf.sprintf "Fail pull %s" (Printexc.to_string e) in
+         Lwt.return (C.log console msg))
     in
     pull () >>= fun _ ->
     let rec dispatcher uri =
