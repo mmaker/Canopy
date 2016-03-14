@@ -36,7 +36,6 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
          let msg = Printf.sprintf "Fail pull %s" (Printexc.to_string e) in
          Lwt.return (C.log console msg))
 
-
   let last_updated_commit_id commit key =
     repo () >>= fun repo ->
     new_task () >>= fun t  ->
@@ -68,15 +67,19 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     let cal = CalendarLib.Calendar.from_unixfloat date in
     CalendarLib.Printer.Calendar.sprint "%d/%m/%Y" cal |> Lwt.return
 
-  let get_articles keys =
+  let update console article_hashtbl =
+    let open Canopy_types in
+
+    let iter_fn key value =
+      value >>= fun value ->
+      date_updated_last key >>= fun date ->
+      let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
+      match article_of_string uri value date with
+      | None -> Lwt.return_unit
+      | Some article -> KeyHashtbl.replace article_hashtbl key article |> Lwt.return
+    in
+    pull console >>= fun () ->
     new_task () >>= fun t ->
-    Lwt_list.map_s (fun key ->
-        Store.read (t "Reading single post") key >>= function
-        | None -> Lwt.return_none
-        | Some str ->
-          date_updated_last key >>= fun date ->
-          let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
-          Canopy_types.article_of_string uri str date |> Lwt.return)
-      keys
+    Store.iter (t "Iterating through values") iter_fn
 
 end

@@ -40,3 +40,23 @@ let article_of_string uri str date =
     | _ -> None
   with
   | _ -> None
+
+module KeyHash = struct
+
+  type t = string list
+
+  let equal a  b = a = b
+  let hash a = List.fold_left (^) "" |> Hashtbl.hash
+
+
+end
+
+module KeyHashtbl = struct
+  module H = Hashtbl.Make(KeyHash)
+  include H
+
+  let find_opt t k =
+    try Some (H.find t k) with
+    | Not_found -> None
+
+end
