@@ -4,6 +4,7 @@ type article = {
   author : string;
   abstract : string option;
   uri : string;
+  date: string;
 }
 
 let meta_assoc str =
@@ -15,7 +16,7 @@ let meta_assoc str =
       let value = Re_str.matched_group 2 meta in
       key, value)
 
-let article_of_string uri str =
+let article_of_string uri str date =
   try
     let r_meta = Re_str.regexp "---" in
     let s_str = Re_str.bounded_split r_meta str 2 in
@@ -35,7 +36,7 @@ let article_of_string uri str =
           Some (List.assoc "abstract" assoc)
         with
         | Not_found -> None in
-      Some {title; content; author; uri; abstract}
+      Some {title; content; author; uri; abstract; date}
     | _ -> None
   with
   | _ -> None

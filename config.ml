@@ -36,6 +36,7 @@ let mathjax_k =
 
 let libraries = [
     "cow";
+    "calendar";
     "decompress";
     "irmin.mirage";
     "irmin.git";
@@ -45,6 +46,7 @@ let libraries = [
 
 let packages = [
     "cow";
+    "calendar";
     "decompress";
     "irmin";
     "mirage-http";

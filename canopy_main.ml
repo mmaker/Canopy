@@ -70,12 +70,13 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
                 let content = flatten_option_list articles |> Canopy_templates.template_listing in
                 respond_html ~status:`OK ~title:"Listing" ~content
             | Some article ->
-                match Canopy_types.article_of_string uri article with
-                | None ->
-                  S.respond_string ~status:`Not_found ~body:"Something really bad" ()
-                | Some article ->
-                  let content = Canopy_templates.template_article article in
-                  respond_html ~status:`OK ~title:article.title ~content
+              Store.date_updated_last key >>= fun date ->
+              match Canopy_types.article_of_string uri article date with
+              | None ->
+                S.respond_string ~status:`Not_found ~body:"Something really bad" ()
+              | Some article ->
+                let content = Canopy_templates.template_article article in
+                respond_html ~status:`OK ~title:article.title ~content
         end in
 
     let callback conn_id request body =

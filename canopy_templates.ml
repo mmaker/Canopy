@@ -63,12 +63,14 @@ let template_article article =
         %s
       </h2>
 <span class='author'>Written by %s</span>
+<br />
+<span class='date'>Last updated: %s</span>
       <br />
       <article>
         %s
       </article>
     </div>
-" article.title article.author article.content
+" article.title article.author article.date article.content
 
 let template_listing_entry article =
   let abstract = match article.abstract with
