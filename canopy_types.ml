@@ -45,9 +45,8 @@ module KeyHash = struct
 
   type t = string list
 
-  let equal a  b = a = b
-  let hash a = List.fold_left (^) "" a |> Hashtbl.hash
-
+  let equal = (=)
+  let hash = Hashtbl.hash
 
 end
 
