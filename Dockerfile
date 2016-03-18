@@ -1,7 +1,6 @@
 FROM ocaml/dev:release-debian-9_ocaml-4.02.3
 MAINTAINER canopy
 ENV OPAMYES 1
-RUN whoami
 RUN sudo apt-get update
 RUN eval `opam config env`; opam update
 RUN eval `opam config env`; opam pin add dolog https://github.com/UnixJunkie/dolog.git\#no_unix
