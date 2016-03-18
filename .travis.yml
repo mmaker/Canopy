@@ -1,0 +1,8 @@
+sudo: required
+
+services:
+  - docker
+
+before_install:
+  - docker pull ocaml/dev:release-debian-9_ocaml-4.02.3
+  - docker run -it -v .:/src ocaml/dev:release-debian-9_ocaml-4.02.3 ls
