@@ -38,7 +38,9 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
       let body = Canopy_templates.template_main ~config ~content ~title ~keys in
       S.respond_string ~status ~body () in
 
-    Store.update console articles_hashtable >>= fun _ ->
+    Store.setup_watch articles_hashtable >>= fun _ ->
+    Store.pull console >>= fun _ ->
+    Store.fill_cache articles_hashtable >>= fun _ ->
 
     let rec dispatcher uri =
       let s_uri = Re_str.split (Re_str.regexp "/") (Uri.pct_decode uri) in
@@ -56,14 +58,14 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
         dispatcher config.index_page
 
       | uri::[] when uri = config.push_hook_path ->
-        Store.update console articles_hashtable >>= fun _ ->
+        Store.pull console >>= fun _ ->
         S.respond_string ~status:`OK ~body:"" ()
 
       | key ->
         begin
           match KeyHashtbl.find_opt articles_hashtable key with
             | None ->
-              Store.get_subkeys s_uri >>= fun keys ->
+              Store.get_subkeys key >>= fun keys ->
               if (List.length keys) = 0 then
                 S.respond_string ~status:`Not_found ~body:"Not found" ()
               else
