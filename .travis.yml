@@ -8,4 +8,4 @@ language: c
 before_install:
   - docker pull ocaml/dev:release-debian-9_ocaml-4.02.3
 
-script: docker run -it -v `pwd`:/src ocaml/dev:release-debian-9_ocaml-4.02.3 bash /src/.travis-bash.sh
+script: docker build -t canopy .
