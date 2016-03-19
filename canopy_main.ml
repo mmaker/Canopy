@@ -77,7 +77,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
               respond_html ~status:`OK ~title:article.title ~content
         end in
 
-    let callback conn_id request body =
+    let callback _ request _ =
       let uri = Cohttp.Request.uri request in
       dispatcher (Uri.path uri)
     in

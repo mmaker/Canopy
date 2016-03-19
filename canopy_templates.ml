@@ -16,7 +16,7 @@ let script_mathjax =
 let template_main ~config ~content ~title ~keys =
   let links = template_links keys in
   let mathjax = if config.mathjax then script_mathjax else "" in
-    Printf.sprintf "
+    Printf.sprintf {|
 <html>
 <head>
 <meta charset='UTF-8'>
@@ -53,11 +53,11 @@ let template_main ~config ~content ~title ~keys =
   </div>
 </main>
 </body>
-" title mathjax config.index_page config.blog_name links content
+|} title mathjax config.index_page config.blog_name links content
 
 
 let template_article article =
-  Printf.sprintf "
+  Printf.sprintf {|
     <div class='post'>
       <h2>
         %s
@@ -70,7 +70,7 @@ let template_article article =
         %s
       </article>
     </div>
-" article.title article.author article.date article.content
+|} article.title article.author article.date article.content
 
 let template_listing_entry article =
   let abstract = match article.abstract with
@@ -78,23 +78,23 @@ let template_listing_entry article =
   | Some abstract -> Printf.sprintf
                        "<p class='list-group-item-text abstract'>%s</p>" abstract in
  Printf.sprintf
- "
+ {|
 <a href='%s' class='list-group-item'>
 <h4 class='list-group-item-heading'>%s</h4>
 <span class='author'>Written by %s</span>
 <br />
 %s
 </a>
-  " article.uri article.title article.author abstract
+  |} article.uri article.title article.author abstract
 
 let template_listing articles =
   let entries = List.fold_left (fun s article ->
       s ^ (template_listing_entry article)) "" articles in
   Printf.sprintf
-"
+{|
     <div class='flex-container'>
       <div class='list-group listing'>
 %s
       </div>
     </div>
-" entries
+|} entries
