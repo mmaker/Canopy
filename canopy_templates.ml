@@ -24,21 +24,22 @@ let template_links keys =
   List.map format_link paths
 
 let script_mathjax =
-  script ~a:[a_src "https://travis-ci.org/Engil/Canopy"] (pcdata "")
+  [script ~a:[a_src "https://travis-ci.org/Engil/Canopy"] (pcdata "")]
 
 let template_main ~config ~content ~title ~keys =
   let links = template_links keys in
+  let mathjax = if config.mathjax then script_mathjax else [] in
   let page =
     html
       (head
 	 (Html5.M.title (pcdata title))
-	 [
+	 (List.append [
 	   meta ~a:[a_charset "UTF-8"] ();
 	   link ~rel:[`Stylesheet] ~href:"/static/bower/bootstrap/dist/css/bootstrap.min.css" ();
 	   link ~rel:[`Stylesheet] ~href:"/static/css/style.css" ();
 	   script ~a:[a_src "/static/bower/jquery/dist/jquery.min.js"] (pcdata "");
 	   script ~a:[a_src "/static/bower/bootstrap/dist/js/bootstrap.min.js"] (pcdata "")
-	 ]
+	 ] mathjax)
       )
       (body
 	 [
