@@ -42,10 +42,12 @@ let libraries = [
     "irmin.git";
     "mirage-http";
     "tls.mirage";
+    "tyxml";
   ]
 
 let packages = [
     "cow";
+    "tyxml";
     "calendar";
     "decompress";
     "irmin";

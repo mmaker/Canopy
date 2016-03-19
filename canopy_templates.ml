@@ -1,100 +1,101 @@
 open Canopy_types
 open Canopy_config
+open Html5.M
+
+module StringPrinter = struct
+    type out = string
+    type m = string
+
+    let empty = ""
+    let concat = (^)
+    let put a = a
+    let make a = a
+end
+
+module StringHtml = Html5.Make_printer(StringPrinter)
 
 let template_links keys =
   let paths = List.map (function
-      | x::_ -> x
-      | _ -> assert false
-    ) keys |> List.sort_uniq (Pervasives.compare) in
-  let format_link link = Printf.sprintf
-      "<li><a href='/%s'><span>%s</span></a></li>" link link in
-  List.fold_left (fun str link -> str ^ (format_link link)) "" paths
+			 | x::_ -> x
+			 | _ -> assert false
+		       ) keys |> List.sort_uniq (Pervasives.compare) in
+  let format_link link =
+    li [ a ~a:[a_href link] [span [pcdata link]]] in
+  List.map format_link paths
 
 let script_mathjax =
-  "<script src='/static/bower/MathJax/MathJax.js'></script>"
+  script ~a:[a_src "https://travis-ci.org/Engil/Canopy"] (pcdata "")
 
 let template_main ~config ~content ~title ~keys =
   let links = template_links keys in
-  let mathjax = if config.mathjax then script_mathjax else "" in
-    Printf.sprintf {|
-<html>
-<head>
-<meta charset='UTF-8'>
-<title>%s</title>
-<link rel='stylesheet' href='/static/bower/bootstrap/dist/css/bootstrap.min.css'>
-<link rel='stylesheet' href='/static/css/style.css'>
-<script src='/static/bower/jquery/dist/jquery.min.js'></script>
-<script src='/static/bower/bootstrap/dist/js/bootstrap.min.js'></script>
-%s
-</head>
-
-<body>
-  <nav class='navbar navbar-default navbar-fixed-top'>
-    <div class='container'>
-      <div class='navbar-header'>
-      <button type='button' class='navbar-toggle collapsed' data-toggle='collapse' data-target='.navbar-collapse'>
-        <span class='sr-only'>Toggle navigation</span>
-        <span class='icon-bar'></span>
-        <span class='icon-bar'></span>
-        <span class='icon-bar'></span>
-      </button>
-        <a class='navbar-brand' href='/%s'>%s</a>
-      </div>
-      <div class='collapse navbar-collapse collapse'>
-        <ul class='nav navbar-nav navbar-right'>
-      %s
-</ul>
-      </div>
-    </div>
-  </nav>
-  <main>
-  <div class='flex-container'>
-      %s
-  </div>
-</main>
-</body>
-|} title mathjax config.index_page config.blog_name links content
+  let page =
+    html
+      (head
+	 (Html5.M.title (pcdata title))
+	 [
+	   meta ~a:[a_charset "UTF-8"] ();
+	   link ~rel:[`Stylesheet] ~href:"/static/bower/bootstrap/dist/css/bootstrap.min.css" ();
+	   link ~rel:[`Stylesheet] ~href:"/static/css/style.css" ();
+	   script ~a:[a_src "/static/bower/jquery/dist/jquery.min.js"] (pcdata "");
+	   script ~a:[a_src "/static/bower/bootstrap/dist/js/bootstrap.min.js"] (pcdata "")
+	 ]
+      )
+      (body
+	 [
+	   nav ~a:[a_class ["navbar navbar-default navbar-fixed-top"]] [
+		 div ~a:[a_class ["container"]] [
+		       div ~a:[a_class ["navbar-header"]] [
+			     button ~a:[a_class ["navbar-toggle collapsed"];
+					a_user_data "toggle" "collapse";
+					a_user_data "target" ".navbar-collapse"
+				       ] [
+				      span ~a:[a_class ["icon-bar"]][];
+				      span ~a:[a_class ["icon-bar"]][];
+				      span ~a:[a_class ["icon-bar"]][]
+				    ];
+			     a ~a:[a_class ["navbar-brand"]; a_href config.index_page][pcdata config.blog_name]
+			   ];
+		       div ~a:[a_class ["collapse navbar-collapse collapse"]] [
+			     ul ~a:[a_class ["nav navbar-nav navbar-right"]] links
+			   ]
+		     ]
+	       ];
+	   main [
+	       div ~a:[a_class ["flex-container"]] content
+	     ]
+	 ]
+      )
+  in
+  StringHtml.print page
 
 
 let template_article article =
-  Printf.sprintf {|
-    <div class='post'>
-      <h2>
-        %s
-      </h2>
-<span class='author'>Written by %s</span>
-<br />
-<span class='date'>Last updated: %s</span>
-      <br />
-      <article>
-        %s
-      </article>
-    </div>
-|} article.title article.author article.date article.content
+  let author = "Written by " ^ article.author in
+  let updated = "Last updated: " ^ article.date in
+  [div ~a:[a_class ["post"]] [
+	 h2 [pcdata article.title];
+	 span ~a:[a_class ["author"]] [pcdata author];
+	 br ();
+	 span ~a:[a_class ["date"]] [pcdata updated];
+	 br ();
+	 Html5.M.article [Unsafe.data article.content]
+       ]]
 
 let template_listing_entry article =
+  let author = "Written by " ^ article.author in
   let abstract = match article.abstract with
-  | None -> ""
-  | Some abstract -> Printf.sprintf
-                       "<p class='list-group-item-text abstract'>%s</p>" abstract in
- Printf.sprintf
- {|
-<a href='%s' class='list-group-item'>
-<h4 class='list-group-item-heading'>%s</h4>
-<span class='author'>Written by %s</span>
-<br />
-%s
-</a>
-  |} article.uri article.title article.author abstract
+    | None -> []
+    | Some abstract -> [p ~a:[a_class ["list-group-item-text abstract"]] [pcdata abstract]] in
+  let content = List.append [
+		    h4 ~a:[a_class ["list-group-item-heading"]] [pcdata article.title];
+		    span ~a:[a_class ["author"]] [pcdata author];
+		    br ();
+		  ] abstract in
+  a ~a:[a_href article.uri; a_class ["list-group-item"]] content
 
 let template_listing articles =
-  let entries = List.fold_left (fun s article ->
-      s ^ (template_listing_entry article)) "" articles in
-  Printf.sprintf
-{|
-    <div class='flex-container'>
-      <div class='list-group listing'>
-%s
-      </div>
-    </div>
-|} entries
+  let entries = List.map template_listing_entry articles in
+  [div ~a:[a_class ["flex-container"]] [
+	 div ~a:[a_class ["list-group listing"]] entries
+       ]
+  ]
