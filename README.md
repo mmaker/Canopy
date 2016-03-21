@@ -4,7 +4,7 @@ Canopy is an attempt at writting a blog-engine based on Git using [MirageOS][mir
 
 The goal is to provide a simple blog platform that only requires you to provide a Git remote URL and respecting some architecture rules within the said repository.
 
-Canopy is written in OCaml using MirageOS and [Irmin][irmin], but it is currently only available on the Unix platform. The Xen platform will be supported as soon as [Decompress][decompress] is ready to be used in Irmin.
+Canopy is written in OCaml using MirageOS and [Irmin][irmin], but it is currently only available on the Unix platform.
 
  [decompress]: <https://github.com/oklm-wsh/Decompress>
  [mirage]: <http://mirage.io/>
