@@ -20,8 +20,8 @@ let template_links keys =
 			 | _ -> assert false
 		       ) keys |> List.sort_uniq (Pervasives.compare) in
   let format_link link =
-    li [ a ~a:[a_href link] [span [pcdata link]]] in
-  List.map format_link paths
+    li [ a ~a:[a_href ("/" ^ link)] [span [pcdata link]]] in
+ List.map format_link paths
 
 let script_mathjax =
   [script ~a:[a_src "https://travis-ci.org/Engil/Canopy"] (pcdata "")]
