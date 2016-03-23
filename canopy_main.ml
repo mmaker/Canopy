@@ -38,7 +38,6 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
       let body = Canopy_templates.template_main ~config ~content ~title ~keys in
       S.respond_string ~status ~body () in
 
-    Store.setup_watch articles_hashtable >>= fun _ ->
     Store.pull console >>= fun _ ->
     Store.fill_cache articles_hashtable >>= fun _ ->
 
@@ -58,8 +57,10 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
         dispatcher config.index_page
 
       | uri::[] when uri = config.push_hook_path ->
-        Store.pull console >>= fun _ ->
-        S.respond_string ~status:`OK ~body:"" ()
+	 Store.pull console >>= fun _ ->
+	 KeyHashtbl.clear articles_hashtable |> Lwt.return >>= fun _ ->
+	 Store.fill_cache articles_hashtable >>= fun _ ->
+	 S.respond_string ~status:`OK ~body:"" ()
 
       | key ->
         begin
