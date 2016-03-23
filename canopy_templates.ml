@@ -14,6 +14,14 @@ end
 
 module StringHtml = Html5.Make_printer(StringPrinter)
 
+let (++) = List.append
+
+let template_taglist tags =
+  let format_tag tag =
+    let taglink = Printf.sprintf "/tags/%s" in
+    a ~a:[taglink tag |> a_href; a_class ["tag"]] [pcdata tag] in
+  List.map format_tag tags |> div ~a:[a_class ["tags"]]
+
 let template_links keys =
   let paths = List.map (function
 			 | x::_ -> x
@@ -33,13 +41,13 @@ let template_main ~config ~content ~title ~keys =
     html
       (head
 	 (Html5.M.title (pcdata title))
-	 (List.append [
+	 ([
 	   meta ~a:[a_charset "UTF-8"] ();
 	   link ~rel:[`Stylesheet] ~href:"/static/bower/bootstrap/dist/css/bootstrap.min.css" ();
 	   link ~rel:[`Stylesheet] ~href:"/static/css/style.css" ();
 	   script ~a:[a_src "/static/bower/jquery/dist/jquery.min.js"] (pcdata "");
 	   script ~a:[a_src "/static/bower/bootstrap/dist/js/bootstrap.min.js"] (pcdata "")
-	 ] mathjax)
+	 ] ++ mathjax)
       )
       (body
 	 [
@@ -54,7 +62,7 @@ let template_main ~config ~content ~title ~keys =
 				      span ~a:[a_class ["icon-bar"]][];
 				      span ~a:[a_class ["icon-bar"]][]
 				    ];
-			     a ~a:[a_class ["navbar-brand"]; a_href config.index_page][pcdata config.blog_name]
+			     a ~a:[a_class ["navbar-brand"]; a_href ("/" ^ config.index_page)][pcdata config.blog_name]
 			   ];
 		       div ~a:[a_class ["collapse navbar-collapse collapse"]] [
 			     ul ~a:[a_class ["nav navbar-nav navbar-right"]] links
@@ -73,11 +81,14 @@ let template_main ~config ~content ~title ~keys =
 let template_article article =
   let author = "Written by " ^ article.author in
   let updated = "Last updated: " ^ article.date in
+  let tags = template_taglist article.tags in
   [div ~a:[a_class ["post"]] [
 	 h2 [pcdata article.title];
 	 span ~a:[a_class ["author"]] [pcdata author];
 	 br ();
 	 span ~a:[a_class ["date"]] [pcdata updated];
+	 br ();
+	 tags;
 	 br ();
 	 Html5.M.article [Unsafe.data article.content]
        ]]
@@ -87,12 +98,12 @@ let template_listing_entry article =
   let abstract = match article.abstract with
     | None -> []
     | Some abstract -> [p ~a:[a_class ["list-group-item-text abstract"]] [pcdata abstract]] in
-  let content = List.append [
-		    h4 ~a:[a_class ["list-group-item-heading"]] [pcdata article.title];
-		    span ~a:[a_class ["author"]] [pcdata author];
-		    br ();
-		  ] abstract in
-  a ~a:[a_href article.uri; a_class ["list-group-item"]] content
+  let content = [
+      h4 ~a:[a_class ["list-group-item-heading"]] [pcdata article.title];
+      span ~a:[a_class ["author"]] [pcdata author];
+      br ();
+    ] in
+  a ~a:[a_href article.uri; a_class ["list-group-item"]] (content ++ abstract)
 
 let template_listing articles =
   let entries = List.map template_listing_entry articles in

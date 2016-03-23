@@ -5,7 +5,17 @@ type article = {
   abstract : string option;
   uri : string;
   date: string;
+  tags: string list;
 }
+
+let map_opt fn default = function
+  | None -> default
+  | Some v -> fn v
+
+let assoc_opt k l =
+  match List.assoc k l with
+  | v -> Some v
+  | exception Not_found -> None
 
 let meta_assoc str =
   Re_str.split (Re_str.regexp "\n") str |>
@@ -18,6 +28,7 @@ let meta_assoc str =
 
 let article_of_string uri str date =
   try
+    let split_tags = Re_str.split (Re_str.regexp ",") in
     let r_meta = Re_str.regexp "---" in
     let s_str = Re_str.bounded_split r_meta str 2 in
     match s_str with
@@ -31,12 +42,9 @@ let article_of_string uri str date =
       let assoc = meta_assoc meta in
       let author = List.assoc "author" assoc in
       let title = List.assoc "title" assoc in
-      let abstract =
-        try
-          Some (List.assoc "abstract" assoc)
-        with
-        | Not_found -> None in
-      Some {title; content; author; uri; abstract; date}
+      let tags = assoc_opt "tags" assoc |> map_opt split_tags [] in
+      let abstract = assoc_opt "abstract" assoc in
+      Some {title; content; author; uri; abstract; date; tags}
     | _ -> None
   with
   | _ -> None

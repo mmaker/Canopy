@@ -62,6 +62,13 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
 	 Store.fill_cache articles_hashtable >>= fun _ ->
 	 S.respond_string ~status:`OK ~body:"" ()
 
+      | "tags"::tagname::_ ->
+	 let is_in_tags = List.exists ((=) tagname) in
+	 let articles = KeyHashtbl.fold (fun _ v l -> if is_in_tags v.tags then v::l else l)
+					articles_hashtable [] in
+	 let content = Canopy_templates.template_listing articles in
+	 respond_html ~status:`OK ~title:"Listing" ~content
+
       | key ->
         begin
           match KeyHashtbl.find_opt articles_hashtable key with
@@ -76,8 +83,9 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
             | Some article ->
               let content = Canopy_templates.template_article article in
               respond_html ~status:`OK ~title:article.title ~content
-        end in
+        end
 
+    in
     let callback _ request _ =
       let uri = Cohttp.Request.uri request in
       dispatcher (Uri.path uri)
