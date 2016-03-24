@@ -1,5 +1,5 @@
-open Canopy_types
 open Canopy_config
+open Canopy_utils
 open Html5.M
 
 module StringPrinter = struct
@@ -14,15 +14,13 @@ end
 
 module StringHtml = Html5.Make_printer(StringPrinter)
 
-let (++) = List.append
-
-let template_taglist tags =
+let taglist tags =
   let format_tag tag =
     let taglink = Printf.sprintf "/tags/%s" in
     a ~a:[taglink tag |> a_href; a_class ["tag"]] [pcdata tag] in
   List.map format_tag tags |> div ~a:[a_class ["tags"]]
 
-let template_links keys =
+let links keys =
   let paths = List.map (function
 			 | x::_ -> x
 			 | _ -> assert false
@@ -34,8 +32,8 @@ let template_links keys =
 let script_mathjax =
   [script ~a:[a_src "https://travis-ci.org/Engil/Canopy"] (pcdata "")]
 
-let template_main ~config ~content ~title ~keys =
-  let links = template_links keys in
+let main ~config ~content ~title ~keys =
+  let links = links keys in
   let mathjax = if config.mathjax then script_mathjax else [] in
   let page =
     html
@@ -77,37 +75,14 @@ let template_main ~config ~content ~title ~keys =
   in
   StringHtml.print page
 
-
-let template_article article =
-  let author = "Written by " ^ article.author in
-  let updated = "Last updated: " ^ article.date in
-  let tags = template_taglist article.tags in
-  [div ~a:[a_class ["post"]] [
-	 h2 [pcdata article.title];
-	 span ~a:[a_class ["author"]] [pcdata author];
-	 br ();
-	 span ~a:[a_class ["date"]] [pcdata updated];
-	 br ();
-	 tags;
-	 br ();
-	 Html5.M.article [Unsafe.data article.content]
-       ]]
-
-let template_listing_entry article =
-  let author = "Written by " ^ article.author in
-  let abstract = match article.abstract with
-    | None -> []
-    | Some abstract -> [p ~a:[a_class ["list-group-item-text abstract"]] [pcdata abstract]] in
-  let content = [
-      h4 ~a:[a_class ["list-group-item-heading"]] [pcdata article.title];
-      span ~a:[a_class ["author"]] [pcdata author];
-      br ();
-    ] in
-  a ~a:[a_href article.uri; a_class ["list-group-item"]] (content ++ abstract)
-
-let template_listing articles =
-  let entries = List.map template_listing_entry articles in
+let listing entries =
   [div ~a:[a_class ["flex-container"]] [
 	 div ~a:[a_class ["list-group listing"]] entries
        ]
   ]
+
+let error msg =
+  [div ~a:[a_class ["alert alert-danger"]] [pcdata msg]]
+
+let empty =
+  div []

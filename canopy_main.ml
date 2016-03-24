@@ -16,7 +16,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
   let start console res ctx http disk _ =
 
     let open Canopy_config in
-    let open Canopy_types in
+    let open Canopy_utils in
     let config = Canopy_config.config () in
     let module Context =
       ( struct
@@ -25,21 +25,15 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
     in
     let module Store = Canopy_store.Store(C)(Context)(Inflator) in
 
-    let articles_hashtable = KeyHashtbl.create 32 in
-
-    let flatten_option_list l =
-      List.fold_left
-        (fun xs x -> match x with
-           | None -> xs
-           | Some x -> x::xs) [] l in
+    let content_hashtbl = KeyHashtbl.create 32 in
 
     let respond_html ~status ~content ~title =
       Store.get_subkeys [] >>= fun keys ->
-      let body = Canopy_templates.template_main ~config ~content ~title ~keys in
+      let body = Canopy_templates.main ~config ~content ~title ~keys in
       S.respond_string ~status ~body () in
 
     Store.pull console >>= fun _ ->
-    Store.fill_cache articles_hashtable >>= fun _ ->
+    Store.fill_cache content_hashtbl >>= fun _ ->
 
     let rec dispatcher uri =
       let s_uri = Re_str.split (Re_str.regexp "/") (Uri.pct_decode uri) in
@@ -58,31 +52,35 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
 
       | uri::[] when uri = config.push_hook_path ->
 	 Store.pull console >>= fun _ ->
-	 KeyHashtbl.clear articles_hashtable |> Lwt.return >>= fun _ ->
-	 Store.fill_cache articles_hashtable >>= fun _ ->
+	 KeyHashtbl.clear content_hashtbl |> Lwt.return >>= fun _ ->
+	 Store.fill_cache content_hashtbl >>= fun _ ->
 	 S.respond_string ~status:`OK ~body:"" ()
 
       | "tags"::tagname::_ ->
-	 let is_in_tags = List.exists ((=) tagname) in
-	 let articles = KeyHashtbl.fold (fun _ v l -> if is_in_tags v.tags then v::l else l)
-					articles_hashtable [] in
-	 let content = Canopy_templates.template_listing articles in
-	 respond_html ~status:`OK ~title:"Listing" ~content
+	 let aux _ v l =
+	   if Canopy_content.find_tag tagname v then (v::l) else l in
+      	 let content =
+	   KeyHashtbl.fold aux content_hashtbl []
+	   |> List.map Canopy_content.to_tyxml_listing_entry
+	   |> Canopy_templates.listing in
+      	 respond_html ~status:`OK ~title:"Listing" ~content
 
       | key ->
         begin
-          match KeyHashtbl.find_opt articles_hashtable key with
+          match KeyHashtbl.find_opt content_hashtbl key with
             | None ->
               Store.get_subkeys key >>= fun keys ->
               if (List.length keys) = 0 then
                 S.respond_string ~status:`Not_found ~body:"Not found" ()
               else
-                let articles = List.map (KeyHashtbl.find_opt articles_hashtable) keys in
-                let content = flatten_option_list articles |> Canopy_templates.template_listing in
+                let articles = List.map (KeyHashtbl.find_opt content_hashtbl) keys in
+                let content =
+		  list_map_opt Canopy_content.to_tyxml_listing_entry articles
+		  |> Canopy_templates.listing in
                 respond_html ~status:`OK ~title:"Listing" ~content
             | Some article ->
-              let content = Canopy_templates.template_article article in
-              respond_html ~status:`OK ~title:article.title ~content
+              let title, content = Canopy_content.to_tyxml article in
+              respond_html ~status:`OK ~title ~content
         end
 
     in

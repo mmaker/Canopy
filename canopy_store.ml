@@ -68,20 +68,18 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     CalendarLib.Printer.Calendar.sprint "%d/%m/%Y" cal |> Lwt.return
 
   let fill_cache article_hashtbl =
-    let open Canopy_types in
     let iter_fn key value =
-      value >>= fun value ->
+      value >>= fun content ->
       date_updated_last key >>= fun date ->
       let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
-      match article_of_string uri value date with
-      | None -> Lwt.return_unit
-      | Some article -> KeyHashtbl.replace article_hashtbl key article |> Lwt.return
+      Canopy_content.of_string ~uri ~content ~date
+      |> KeyHashtbl.replace article_hashtbl key
+      |> Lwt.return
     in
     new_task () >>= fun t ->
     Store.iter (t "Iterating through values") iter_fn
 
   let setup_watch hashtbl =
-    let open Canopy_types in
     new_task () >>= fun t ->
     Store.watch_head (t "watch branch") (fun _ ->
       KeyHashtbl.clear hashtbl |> Lwt.return >>= fun _ ->
