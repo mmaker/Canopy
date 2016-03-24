@@ -1,6 +1,7 @@
 open Lwt.Infix
 open V1_LWT
 open Canopy_config
+open Canopy_utils
 
 module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = struct
 
