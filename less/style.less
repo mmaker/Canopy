@@ -1,85 +1,17 @@
-@import "constants.less";
-@import "mixins/navbar.less";
-@import url(https://fonts.googleapis.com/css?family=Josefin+Sans:600);
+// ======================
+//    MAIN APP STYLES
+// ======================
 
-.navbar-default { .navbar-variant(@BarColor, #111); }
+// Q: WHEN CAN I EDIT THIS FILE?
+// A: This file should only be edited to add
+// new partial files. It should contain
+// NO raw styles dropped in. NONE whatsoever.
+// Partial imports are organized from most basic
+// to most specific to preserve natural CSS cascade.
 
-body {
-    background: #fff;
-}
-
-h2 {
-    margin-bottom: 3px;
-}
-
-.flex-container {
-    display: flex;
-    width: 100%;
-    justify-content: center;
-}
-
-main {
-    margin-top: 51px;
-}
-
-.post {
-    width: 90%;
-    max-width: 600px;
-    font-family: 'Josefin Sans', sans-serif;
-    font-size: 1.2em;
-}
-
-.listing {
-    width: 90%;
-    max-width: 600px;
-    font-family: 'Josefin Sans', sans-serif;
-    font-size: 1.2em;
-}
-
-span.author {
-    font-size: 0.8em;
-    color: #555;
-}
-
-span.date {
-    font-size: 0.7em;
-    color: #666;
-}
-
-p.extract {
-    margin-top: 10px;
-    font-size: 0.9em;
-}
-
-.post-title {
-    font-size: 1.3em;
-}
-
-.navbar-toggle .icon-bar {
-    background-color: #222;
-}
-
-div.list-group-item {
-    border: 0px;
-}
-
-article {
-    margin-top: 30px;
-}
-
-a.tag {
-    margin-right: 3px;
-    font-size: 0.7em;
-    color: #777;
-}
-
-footer {
-    margin-top: 20px;
-    font-size: 0.7em;
-    color: #777;
-    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
-}
-
-.MathJax {
-    font-size: 2em !important;
-}
+@import url(partials/reset.less);
+@import url(partials/constants.less);
+@import url(partials/layout.less);
+@import url(partials/typography.less);
+@import url(partials/atoms.less);
+@import url(partials/navbar.less);
