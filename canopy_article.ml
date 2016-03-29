@@ -31,9 +31,8 @@ let to_tyxml article =
 	 h2 [pcdata article.title];
 	 span ~a:[a_class ["author"]] [pcdata author];
 	 br ();
-	 span ~a:[a_class ["date"]] [pcdata updated];
-	 br ();
 	 tags;
+	 span ~a:[a_class ["date"]] [pcdata updated];
 	 br ();
 	 Html5.M.article [Unsafe.data article.content]
        ]]

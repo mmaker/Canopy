@@ -18,7 +18,8 @@ let taglist tags =
   let format_tag tag =
     let taglink = Printf.sprintf "/tags/%s" in
     a ~a:[taglink tag |> a_href; a_class ["tag"]] [pcdata tag] in
-  List.map format_tag tags |> div ~a:[a_class ["tags"]]
+  let tags = List.map format_tag tags in
+  div ~a:[a_class ["tags"]] ([pcdata "Classified under: "] ++ tags)
 
 let links keys =
   let paths = List.map (function
