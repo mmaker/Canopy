@@ -2,8 +2,11 @@ open Canopy_utils
 
 type t =
   | Markdown of Canopy_article.t
-  | Unknown
+
+type error_t =
+  Unknown
   | Error of string
+  | Ok of t
 
 let meta_assoc str =
   Re_str.split (Re_str.regexp "\n") str |>
@@ -26,7 +29,7 @@ let of_string ~uri ~date ~content =
 	    | Some "markdown"
 	    | None ->
 	       Canopy_article.of_string meta uri date raw_content
-	       |> map_opt (fun article -> Markdown article) (Error "Error while parsing article")
+	       |> map_opt (fun article -> Ok (Markdown article)) (Error "Error while parsing article")
 	    | Some _ -> Unknown
 	  end
        | exception _ -> Unknown
@@ -37,17 +40,11 @@ let to_tyxml = function
   | Markdown m ->
      let open Canopy_article in
      m.title, to_tyxml m
-  | Unknown -> "Error", Canopy_templates.error "Unknown file content"
-  | Error msg -> "Error", Canopy_templates.error msg
 
 let to_tyxml_listing_entry = function
   | Markdown m -> Canopy_article.to_tyxml_listing_entry m
-  | Unknown -> Canopy_templates.empty
-  | Error _ -> Canopy_templates.empty
 
 let find_tag tagname = function
   | Markdown m ->
      let open Canopy_article in
      List.exists ((=) tagname) m.tags
-  | Unknown
-  | Error _ -> false

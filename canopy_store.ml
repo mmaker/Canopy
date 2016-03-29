@@ -26,6 +26,14 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     new_task () >>= fun t ->
     Store.read (t "Read post") key
 
+  let fold t fn acc =
+    let acc = ref (Lwt.return acc) in
+    let mut = Lwt_mutex.create () in
+    Store.iter t (fun k v ->
+		  Lwt_mutex.with_lock mut
+                 (fun _ -> !acc >>= fun acc' -> (acc := (fn k v acc')) |> Lwt.return))
+    >>= fun _ -> !acc
+
   let pull console =
     new_task () >>= fun t ->
     Lwt.return (C.log console "Pulling repository") >>= fun _ ->
@@ -69,21 +77,22 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     CalendarLib.Printer.Calendar.sprint "%d/%m/%Y" cal |> Lwt.return
 
   let fill_cache article_hashtbl =
-    let iter_fn key value =
+    let open Canopy_content in
+    let key_to_path key = List.fold_left (fun a b -> a ^ "/" ^ b) "" key in
+    let fold_fn key value acc =
       value >>= fun content ->
       date_updated_last key >>= fun date ->
       let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
-      Canopy_content.of_string ~uri ~content ~date
-      |> KeyHashtbl.replace article_hashtbl key
-      |> Lwt.return
+      match of_string ~uri ~content ~date with
+	| Ok article -> (KeyHashtbl.replace article_hashtbl key article; Lwt.return acc)
+	| Error error ->
+	   let error_msg = Printf.sprintf "Error while parsing %s: %s" (key_to_path key) error in
+	   Lwt.return (error_msg::acc)
+	| Unknown ->
+	   let error_msg = Printf.sprintf "%s : Unknown content type" (key_to_path key) in
+	   Lwt.return (error_msg::acc)
     in
     new_task () >>= fun t ->
-    Store.iter (t "Iterating through values") iter_fn
+    fold (t "Folding through values") fold_fn []
 
-  let setup_watch hashtbl =
-    new_task () >>= fun t ->
-    Store.watch_head (t "watch branch") (fun _ ->
-      KeyHashtbl.clear hashtbl |> Lwt.return >>= fun _ ->
-      fill_cache hashtbl
-    )
 end

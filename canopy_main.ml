@@ -32,8 +32,15 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
       let body = Canopy_templates.main ~config ~content ~title ~keys in
       S.respond_string ~status ~body () in
 
+    let respond_update = function
+      | [] -> S.respond_string ~status:`OK ~body:"" ()
+      | errors ->
+	 let body = List.fold_left (fun a b -> a ^ "\n" ^ b) "" errors in
+	 S.respond_string ~status:`Bad_request ~body () in
+
     Store.pull console >>= fun _ ->
-    Store.fill_cache content_hashtbl >>= fun _ ->
+    Store.fill_cache content_hashtbl >>=
+    Lwt_list.iter_p (C.log_s console) >>= fun () ->
 
     let rec dispatcher uri =
       let s_uri = Re_str.split (Re_str.regexp "/") (Uri.pct_decode uri) in
@@ -53,8 +60,8 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
       | uri::[] when uri = config.push_hook_path ->
 	 Store.pull console >>= fun _ ->
 	 KeyHashtbl.clear content_hashtbl |> Lwt.return >>= fun _ ->
-	 Store.fill_cache content_hashtbl >>= fun _ ->
-	 S.respond_string ~status:`OK ~body:"" ()
+	 Store.fill_cache content_hashtbl >>=
+	 respond_update
 
       | "tags"::tagname::_ ->
 	 let aux _ v l =
