@@ -68,6 +68,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
 	   if Canopy_content.find_tag tagname v then (v::l) else l in
       	 let content =
 	   KeyHashtbl.fold aux content_hashtbl []
+	   |> List.sort Canopy_content.compare
 	   |> List.map Canopy_content.to_tyxml_listing_entry
 	   |> Canopy_templates.listing in
       	 respond_html ~status:`OK ~title:"Listing" ~content
@@ -82,7 +83,9 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
               else
                 let articles = List.map (KeyHashtbl.find_opt content_hashtbl) keys in
                 let content =
-		  list_map_opt Canopy_content.to_tyxml_listing_entry articles
+		  list_reduce_opt articles
+		  |> List.sort Canopy_content.compare
+		  |> List.map Canopy_content.to_tyxml_listing_entry
 		  |> Canopy_templates.listing in
                 respond_html ~status:`OK ~title:"Listing" ~content
             | Some article ->

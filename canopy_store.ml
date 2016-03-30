@@ -73,8 +73,7 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     last_updated_commit_id head key >>= fun commit_id ->
     Store.Repo.task_of_commit_id repo commit_id >>= fun task ->
     let date = Irmin.Task.date task |> Int64.to_float in
-    let cal = CalendarLib.Calendar.from_unixfloat date in
-    CalendarLib.Printer.Calendar.sprint "%d/%m/%Y" cal |> Lwt.return
+    CalendarLib.Calendar.from_unixfloat date |> Lwt.return
 
   let fill_cache article_hashtbl =
     let open Canopy_content in

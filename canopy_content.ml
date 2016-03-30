@@ -1,12 +1,12 @@
 open Canopy_utils
 
-type t =
+type content_t =
   | Markdown of Canopy_article.t
 
 type error_t =
   Unknown
   | Error of string
-  | Ok of t
+  | Ok of content_t
 
 let meta_assoc str =
   Re_str.split (Re_str.regexp "\n") str |>
@@ -48,3 +48,10 @@ let find_tag tagname = function
   | Markdown m ->
      let open Canopy_article in
      List.exists ((=) tagname) m.tags
+
+let date = function
+  | Markdown m ->
+     let open Canopy_article in
+     m.date
+
+let compare a b = CalendarLib.Calendar.compare (date b) (date a)
