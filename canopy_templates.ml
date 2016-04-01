@@ -14,12 +14,18 @@ end
 
 module StringHtml = Html5.Make_printer(StringPrinter)
 
+let empty =
+  div []
+
 let taglist tags =
   let format_tag tag =
     let taglink = Printf.sprintf "/tags/%s" in
     a ~a:[taglink tag |> a_href; a_class ["tag"]] [pcdata tag] in
-  let tags = List.map format_tag tags in
-  div ~a:[a_class ["tags"]] ([pcdata "Classified under: "] ++ tags)
+  match tags with
+  | [] -> empty
+  | tags ->
+     let tags = List.map format_tag tags in
+     div ~a:[a_class ["tags"]] ([pcdata "Classified under: "] ++ tags)
 
 let links keys =
   let paths = List.map (function
@@ -84,6 +90,3 @@ let listing entries =
 
 let error msg =
   [div ~a:[a_class ["alert alert-danger"]] [pcdata msg]]
-
-let empty =
-  div []
