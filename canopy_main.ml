@@ -87,7 +87,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
 		  |> List.sort Canopy_content.compare
 		  |> List.map Canopy_content.to_tyxml_listing_entry
 		  |> Canopy_templates.listing in
-                respond_html ~status:`OK ~title:"Listing" ~content
+                respond_html ~status:`OK ~title:config.blog_name ~content
             | Some article ->
               let title, content = Canopy_content.to_tyxml article in
               respond_html ~status:`OK ~title ~content
