@@ -54,4 +54,4 @@ let date = function
      let open Canopy_article in
      m.date
 
-let compare a b = CalendarLib.Calendar.compare (date b) (date a)
+let compare a b = Ptime.compare (date b) (date a)

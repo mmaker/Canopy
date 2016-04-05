@@ -73,7 +73,9 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     last_updated_commit_id head key >>= fun commit_id ->
     Store.Repo.task_of_commit_id repo commit_id >>= fun task ->
     let date = Irmin.Task.date task |> Int64.to_float in
-    CalendarLib.Calendar.from_unixfloat date |> Lwt.return
+    Ptime.of_float_s date |> function
+      | Some o -> Lwt.return o
+      | None -> raise (Invalid_argument "date_updated_last")
 
   let fill_cache article_hashtbl =
     let open Canopy_content in

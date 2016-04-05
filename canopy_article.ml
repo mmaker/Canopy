@@ -7,7 +7,7 @@ type t = {
   author : string;
   abstract : string option;
   uri : string;
-  date: CalendarLib.Calendar.t;
+  date: Ptime.t;
   tags: string list;
 }
 
@@ -25,7 +25,7 @@ let of_string meta uri date content =
 
 let to_tyxml article =
   let author = "Written by " ^ article.author in
-  let date = calendar_to_pretty_date article.date in
+  let date = ptime_to_pretty_date article.date in
   let updated = "Last updated: " ^ date in
   let tags = Canopy_templates.taglist article.tags in
   [div ~a:[a_class ["post"]] [
