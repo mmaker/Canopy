@@ -1,0 +1,14 @@
+PKG lwt
+PKG irmin
+PKG mirage
+PKG cow
+PKG calendar
+PKG decompress
+PKG irmin.mirage
+PKG irmin.git
+PKG mirage-http
+PKG tls.mirage
+PKG mirage-console
+
+S .
+B _build
