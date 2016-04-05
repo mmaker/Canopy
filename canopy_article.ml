@@ -49,3 +49,29 @@ let to_tyxml_listing_entry article =
       br ();
     ] in
   a ~a:[a_href article.uri; a_class ["list-group-item"]] (content ++ abstract)
+
+let to_atom ({ title; author; abstract; uri; date; tags; _ } as article) =
+  let to_html article =
+    to_tyxml article |> fun content ->
+      let buffer = Buffer.create 16 in
+      Html5.P.print_list ~output:(Buffer.add_string buffer) content;
+      Buffer.contents buffer
+  in
+  let text x : Syndic.Atom.text_construct = Syndic.Atom.Text x in
+  let summary = match abstract with
+    | Some x -> Some (text x)
+    | None -> None
+  in
+  let categories =
+    List.map
+      (fun x -> Syndic.Atom.category ~scheme:(Uri.of_string ("/tags/" ^ x)) x)
+      tags
+  in
+  Syndic.Atom.entry
+    ~id:(Uri.of_string uri)
+    ~content:(Syndic.Atom.Html (None, to_html article))
+    ~authors:(Syndic.Atom.author author, [])
+    ~title:(text title)
+    ~updated:date
+    ?summary
+    ~categories ()

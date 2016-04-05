@@ -44,6 +44,9 @@ let to_tyxml = function
 let to_tyxml_listing_entry = function
   | Markdown m -> Canopy_article.to_tyxml_listing_entry m
 
+let to_atom = function
+  | Markdown m -> Canopy_article.to_atom m
+
 let find_tag tagname = function
   | Markdown m ->
      let open Canopy_article in

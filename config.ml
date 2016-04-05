@@ -59,7 +59,8 @@ let packages = [
     "channel";
     "mirage-git";
     "re";
-    "cohttp"
+    "cohttp";
+    "syndic";
   ]
 
 
