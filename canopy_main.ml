@@ -54,6 +54,27 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
             S.respond_string ~status:`OK ~body ()
         end
 
+      | "atom" :: [] ->
+        begin
+          try
+            let l = KeyHashtbl.fold (fun key x acc -> x :: acc) content_hashtbl [] in
+            let entries = List.map Canopy_content.to_atom l in
+            let ns_prefix _ = Some "" in
+            Store.last_commit_date ()
+            >>= fun updated ->
+              Syndic.Atom.feed
+                ~id:(Uri.of_string config.blog_name)
+                ~title:(Syndic.Atom.Text config.blog_name : Syndic.Atom.text_construct)
+                ~updated
+                entries
+            |> fun feed -> Syndic.Atom.to_xml feed |> fun x -> Syndic.XML.to_string ~ns_prefix x
+            |> fun body ->
+              let headers = Cohttp.Header.init_with "Content-Type" "application/atom+xml; charset=UTF-8" in
+              S.respond_string ~status:`OK ~headers ~body ()
+          with exn ->
+            C.log console (Printf.sprintf "%s" (Printexc.to_string exn));
+            raise exn
+        end
       | [] ->
         dispatcher config.index_page
 
