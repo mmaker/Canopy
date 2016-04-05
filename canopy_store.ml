@@ -96,4 +96,13 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     new_task () >>= fun t ->
     fold (t "Folding through values") fold_fn []
 
+  let last_commit_date () =
+    new_task () >>= fun t  ->
+    repo () >>= fun repo ->
+    Store.head_exn (t "Finding head") >>= fun head ->
+    Store.Repo.task_of_commit_id repo head >>= fun task ->
+    let date = Irmin.Task.date task |> Int64.to_float in
+    Ptime.of_float_s date |> function
+      | Some o -> Lwt.return o
+      | None -> raise (Invalid_argument "date_updated_last")
 end
