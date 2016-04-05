@@ -51,7 +51,8 @@ let main ~config ~content ~title ~keys =
 	   link ~rel:[`Stylesheet] ~href:"/static/bower/bootstrap/dist/css/bootstrap.min.css" ();
 	   link ~rel:[`Stylesheet] ~href:"/static/css/style.css" ();
 	   script ~a:[a_src "/static/bower/jquery/dist/jquery.min.js"] (pcdata "");
-	   script ~a:[a_src "/static/bower/bootstrap/dist/js/bootstrap.min.js"] (pcdata "")
+	   script ~a:[a_src "/static/bower/bootstrap/dist/js/bootstrap.min.js"] (pcdata "");
+     link ~rel:[`Alternate] ~href:"/atom" ~a:[a_title title; a_mime_type "application/atom+xml"] ();
 	 ] ++ mathjax)
       )
       (body
