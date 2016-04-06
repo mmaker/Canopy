@@ -7,11 +7,12 @@ type t = {
   author : string;
   abstract : string option;
   uri : string;
-  date: CalendarLib.Calendar.t;
+  created: CalendarLib.Calendar.t;
+  updated: CalendarLib.Calendar.t;
   tags: string list;
 }
 
-let of_string meta uri date content =
+let of_string meta uri created updated content =
   try
     let split_tags = Re_str.split (Re_str.regexp ",") in
     let content = Cow.Markdown.of_string content |> Cow.Html.to_string in
@@ -19,13 +20,13 @@ let of_string meta uri date content =
     let title = List.assoc "title" meta in
     let tags = assoc_opt "tags" meta |> map_opt split_tags [] |> List.map String.trim in
     let abstract = assoc_opt "abstract" meta in
-    Some {title; content; author; uri; abstract; date; tags}
+    Some {title; content; author; uri; abstract; created; updated; tags}
   with
   | _ -> None
 
 let to_tyxml article =
   let author = "Written by " ^ article.author in
-  let date = calendar_to_pretty_date article.date in
+  let date = calendar_to_pretty_date article.updated in
   let updated = "Last updated: " ^ date in
   let tags = Canopy_templates.taglist article.tags in
   [div ~a:[a_class ["post"]] [

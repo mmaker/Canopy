@@ -45,6 +45,34 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
          let msg = Printf.sprintf "Fail pull %s" (Printexc.to_string e) in
          Lwt.return (C.log console msg))
 
+  let created_commit_id commit keys =
+    repo () >>= fun repo ->
+    Store.master task repo >>= fun t  ->
+    Store.history (t "Reading history") >>= fun history ->
+    let rec aux last_commit visited to_visit =
+      match to_visit with
+      | [] -> Lwt.return last_commit
+      | commit::to_visit ->
+	 Store.of_commit_id (Irmin.Task.none) commit repo >>= fun store ->
+	 Store.read (store ()) keys >>= fun readed_file ->
+	 let visited = commit::visited in
+	 match readed_file with
+	 | Some _ ->
+	    let to_visit =
+	      ( match Store.History.pred history commit with
+		| [] -> to_visit
+		| pred::pred2::[] ->
+		   let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
+		   let to_visit = if ((List.mem pred2 visited) = false) then pred2::to_visit else to_visit in
+		   to_visit
+		| pred::[] ->
+		   let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
+		   to_visit
+		| q -> print_endline "weird"; List.append (List.rev q) to_visit)
+	    in aux commit visited to_visit
+	 | None -> Lwt.return last_commit in
+    aux commit [] [commit]
+
   let last_updated_commit_id commit key =
     repo () >>= fun repo ->
     new_task () >>= fun t  ->
@@ -66,23 +94,28 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     Topological.fold aux history (Lwt.return (commit, false))
     >>= fun (c, _) -> Lwt.return c
 
-  let date_updated_last key =
+  let date_updated_created key =
     new_task () >>= fun t  ->
     repo () >>= fun repo ->
     Store.head_exn (t "Finding head") >>= fun head ->
-    last_updated_commit_id head key >>= fun commit_id ->
-    Store.Repo.task_of_commit_id repo commit_id >>= fun task ->
+    last_updated_commit_id head key >>= fun updated_commit_id ->
+    last_updated_commit_id head key >>= fun created_commit_id ->
+    Store.Repo.task_of_commit_id repo updated_commit_id >>= fun task ->
     let date = Irmin.Task.date task |> Int64.to_float in
-    CalendarLib.Calendar.from_unixfloat date |> Lwt.return
+    let updated_date = CalendarLib.Calendar.from_unixfloat date in
+    Store.Repo.task_of_commit_id repo created_commit_id >>= fun task ->
+    let date = Irmin.Task.date task |> Int64.to_float in
+    let created_date = CalendarLib.Calendar.from_unixfloat date in
+    Lwt.return (updated_date, created_date)
 
   let fill_cache article_hashtbl =
     let open Canopy_content in
     let key_to_path key = List.fold_left (fun a b -> a ^ "/" ^ b) "" key in
     let fold_fn key value acc =
       value >>= fun content ->
-      date_updated_last key >>= fun date ->
+      date_updated_created key >>= fun (updated, created) ->
       let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
-      match of_string ~uri ~content ~date with
+      match of_string ~uri ~content ~created ~updated with
 	| Ok article -> (KeyHashtbl.replace article_hashtbl key article; Lwt.return acc)
 	| Error error ->
 	   let error_msg = Printf.sprintf "Error while parsing %s: %s" (key_to_path key) error in
