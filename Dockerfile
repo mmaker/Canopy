@@ -9,5 +9,5 @@ RUN opam pin add crc https://github.com/yomimono/ocaml-crc.git\#xen_linkopts
 COPY . /src
 RUN sudo chown -R opam:opam /src
 WORKDIR /src
-RUN opam config exec -- mirage configure --unix
+RUN opam config exec -- mirage configure --xen
 RUN opam config exec -- make
