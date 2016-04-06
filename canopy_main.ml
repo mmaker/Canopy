@@ -52,6 +52,7 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
             ~id:(Uri.of_string config.blog_name)
             ~title:(Syndic.Atom.Text config.blog_name : Syndic.Atom.text_construct)
             ~updated
+            ~links:[Syndic.Atom.link ~rel:Syndic.Atom.Self (Uri.of_string "/atom")]
             entries
         |> fun feed -> Syndic.Atom.to_xml feed |> fun x -> Syndic.XML.to_string ~ns_prefix x
         |> fun body -> cache := Some body; body
