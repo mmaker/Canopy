@@ -17,7 +17,7 @@ let meta_assoc str =
       let value = Re_str.matched_group 2 meta in
       key, value)
 
-let of_string ~uri ~date ~content =
+let of_string ~uri ~created ~updated ~content =
   let splitted_content = Re_str.bounded_split (Re_str.regexp "---") content 2 in
   match splitted_content with
   | [raw_meta;raw_content] ->
@@ -28,7 +28,7 @@ let of_string ~uri ~date ~content =
 	    match assoc_opt "content" meta with
 	    | Some "markdown"
 	    | None ->
-	       Canopy_article.of_string meta uri date raw_content
+	       Canopy_article.of_string meta uri created updated raw_content
 	       |> map_opt (fun article -> Ok (Markdown article)) (Error "Error while parsing article")
 	    | Some _ -> Unknown
 	  end
@@ -55,6 +55,6 @@ let find_tag tagname = function
 let date = function
   | Markdown m ->
      let open Canopy_article in
-     m.date
+     m.created
 
 let compare a b = Ptime.compare (date b) (date a)
