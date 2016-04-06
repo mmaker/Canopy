@@ -51,7 +51,7 @@ let to_tyxml_listing_entry article =
     ] in
   a ~a:[a_href article.uri; a_class ["list-group-item"]] (content ++ abstract)
 
-let to_atom { title; author; abstract; uri; created; updated; tags; content; } =
+let to_atom ({ title; author; abstract; uri; created; updated; tags; content; } as article) =
   let text x : Syndic.Atom.text_construct = Syndic.Atom.Text x in
   let summary = match abstract with
     | Some x -> Some (text x)
@@ -62,11 +62,21 @@ let to_atom { title; author; abstract; uri; created; updated; tags; content; } =
       (fun x -> Syndic.Atom.category ~scheme:(Uri.of_string ("/tags/" ^ x)) x)
       tags
   in
+  let generate_id ?(root = "") { created; uri; _ } =
+    let d, m, y = Ptime.to_date created in
+    let relatif = Uri.path @@ Uri.of_string uri in
+    let ts = Ptime.Span.to_int_s @@ Ptime.to_span created in
+    Printf.sprintf "tag:%s,%d-%d-%d:%s/%a" root d m y relatif
+      (fun () -> function Some a -> string_of_int a | None -> "") ts
+    |> Uri.of_string
+  in
   Syndic.Atom.entry
-    ~id:(Uri.of_string uri)
+    ~id:(generate_id article)
     ~content:(Syndic.Atom.Html (None, content))
     ~authors:(Syndic.Atom.author author, [])
     ~title:(text title)
     ~updated
     ?summary
-    ~categories ()
+    ~categories
+    ~links:[Syndic.Atom.link ~rel:Syndic.Atom.Alternate (Uri.of_string uri)]
+    ()
