@@ -44,6 +44,9 @@ let to_tyxml = function
 let to_tyxml_listing_entry = function
   | Markdown m -> Canopy_article.to_tyxml_listing_entry m
 
+let to_atom = function
+  | Markdown m -> Canopy_article.to_atom m
+
 let find_tag tagname = function
   | Markdown m ->
      let open Canopy_article in
@@ -54,4 +57,4 @@ let date = function
      let open Canopy_article in
      m.created
 
-let compare a b = CalendarLib.Calendar.compare (date b) (date a)
+let compare a b = Ptime.compare (date b) (date a)

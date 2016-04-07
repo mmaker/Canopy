@@ -102,11 +102,13 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     created_commit_id head key >>= fun created_commit_id ->
     Store.Repo.task_of_commit_id repo updated_commit_id >>= fun task ->
     let date = Irmin.Task.date task |> Int64.to_float in
-    let updated_date = CalendarLib.Calendar.from_unixfloat date in
+    let updated_date = Ptime.of_float_s date in
     Store.Repo.task_of_commit_id repo created_commit_id >>= fun task ->
     let date = Irmin.Task.date task |> Int64.to_float in
-    let created_date = CalendarLib.Calendar.from_unixfloat date in
-    Lwt.return (updated_date, created_date)
+    let created_date = Ptime.of_float_s date in
+    match updated_date, created_date with
+    | Some a, Some b -> Lwt.return (a, b)
+    | _ -> raise (Invalid_argument "date_updated_last")
 
   let fill_cache article_hashtbl =
     let open Canopy_content in
@@ -127,4 +129,13 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     new_task () >>= fun t ->
     fold (t "Folding through values") fold_fn []
 
+  let last_commit_date () =
+    new_task () >>= fun t  ->
+    repo () >>= fun repo ->
+    Store.head_exn (t "Finding head") >>= fun head ->
+    Store.Repo.task_of_commit_id repo head >>= fun task ->
+    let date = Irmin.Task.date task |> Int64.to_float in
+    Ptime.of_float_s date |> function
+      | Some o -> Lwt.return o
+      | None -> raise (Invalid_argument "date_updated_last")
 end

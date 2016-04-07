@@ -38,9 +38,35 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
 	 let body = List.fold_left (fun a b -> a ^ "\n" ^ b) "" errors in
 	 S.respond_string ~status:`Bad_request ~body () in
 
+    let update_atom, get_atom =
+      let cache = ref None in
+      let update_atom () =
+        let l = KeyHashtbl.fold (fun key x acc -> x :: acc) content_hashtbl []
+                |> List.sort Canopy_content.compare
+                |> Canopy_utils.resize 10 in
+        let entries = List.map Canopy_content.to_atom l in
+        let ns_prefix _ = Some "" in
+        Store.last_commit_date ()
+        >|= fun updated ->
+          Syndic.Atom.feed
+            ~id:(Uri.of_string config.blog_name)
+            ~title:(Syndic.Atom.Text config.blog_name : Syndic.Atom.text_construct)
+            ~updated
+            ~links:[Syndic.Atom.link ~rel:Syndic.Atom.Self (Uri.of_string "/atom")]
+            entries
+        |> fun feed -> Syndic.Atom.to_xml feed |> fun x -> Syndic.XML.to_string ~ns_prefix x
+        |> fun body -> cache := Some body; body
+      in
+      (fun () -> ignore (update_atom ()); Lwt.return ()),
+      (fun () -> match !cache with
+        | Some body -> Lwt.return body
+        | None -> update_atom ())
+    in
+
     Store.pull console >>= fun _ ->
-    Store.fill_cache content_hashtbl >>=
-    Lwt_list.iter_p (C.log_s console) >>= fun () ->
+    Store.fill_cache content_hashtbl >>= fun l ->
+    update_atom () >>= fun () ->
+    Lwt_list.iter_p (C.log_s console) l >>= fun () ->
 
     let rec dispatcher uri =
       let s_uri = Re_str.split (Re_str.regexp "/") (Uri.pct_decode uri) in
@@ -54,14 +80,19 @@ module Main  (C: CONSOLE) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (S:Cohtt
             S.respond_string ~status:`OK ~body ()
         end
 
+      | "atom" :: [] ->
+        get_atom () >>= fun body ->
+        let headers = Cohttp.Header.init_with "Content-Type" "application/atom+xml; charset=UTF-8" in
+        S.respond_string ~status:`OK ~headers ~body ()
       | [] ->
         dispatcher config.index_page
 
       | uri::[] when uri = config.push_hook_path ->
 	 Store.pull console >>= fun _ ->
 	 KeyHashtbl.clear content_hashtbl |> Lwt.return >>= fun _ ->
-	 Store.fill_cache content_hashtbl >>=
-	 respond_update
+	 Store.fill_cache content_hashtbl >>= fun l ->
+   update_atom () >>= fun () ->
+	 respond_update l
 
       | "tags"::tagname::_ ->
 	 let aux _ v l =

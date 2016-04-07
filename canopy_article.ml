@@ -7,8 +7,8 @@ type t = {
   author : string;
   abstract : string option;
   uri : string;
-  created: CalendarLib.Calendar.t;
-  updated: CalendarLib.Calendar.t;
+  created: Ptime.t;
+  updated: Ptime.t;
   tags: string list;
 }
 
@@ -26,7 +26,7 @@ let of_string meta uri created updated content =
 
 let to_tyxml article =
   let author = "Written by " ^ article.author in
-  let date = calendar_to_pretty_date article.updated in
+  let date = ptime_to_pretty_date article.updated in
   let updated = "Last updated: " ^ date in
   let tags = Canopy_templates.taglist article.tags in
   [div ~a:[a_class ["post"]] [
@@ -50,3 +50,33 @@ let to_tyxml_listing_entry article =
       br ();
     ] in
   a ~a:[a_href article.uri; a_class ["list-group-item"]] (content ++ abstract)
+
+let to_atom ({ title; author; abstract; uri; created; updated; tags; content; } as article) =
+  let text x : Syndic.Atom.text_construct = Syndic.Atom.Text x in
+  let summary = match abstract with
+    | Some x -> Some (text x)
+    | None -> None
+  in
+  let categories =
+    List.map
+      (fun x -> Syndic.Atom.category ~scheme:(Uri.of_string ("/tags/" ^ x)) x)
+      tags
+  in
+  let generate_id ?(root = "") { created; uri; _ } =
+    let d, m, y = Ptime.to_date created in
+    let relatif = Uri.path @@ Uri.of_string uri in
+    let ts = Ptime.Span.to_int_s @@ Ptime.to_span created in
+    Printf.sprintf "tag:%s,%d-%d-%d:%s/%a" root d m y relatif
+      (fun () -> function Some a -> string_of_int a | None -> "") ts
+    |> Uri.of_string
+  in
+  Syndic.Atom.entry
+    ~id:(generate_id article)
+    ~content:(Syndic.Atom.Html (None, content))
+    ~authors:(Syndic.Atom.author author, [])
+    ~title:(text title)
+    ~updated
+    ?summary
+    ~categories
+    ~links:[Syndic.Atom.link ~rel:Syndic.Atom.Alternate (Uri.of_string uri)]
+    ()

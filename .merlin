@@ -8,7 +8,10 @@ PKG irmin.mirage
 PKG irmin.git
 PKG mirage-http
 PKG tls.mirage
+PKG tyxml
 PKG mirage-console
+PKG syndic
+PKG ptime
 
 S .
 B _build

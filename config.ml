@@ -36,19 +36,20 @@ let mathjax_k =
 
 let libraries = [
     "cow";
-    "calendar";
+    "ptime";
     "decompress";
     "irmin.mirage";
     "irmin.git";
     "mirage-http";
     "tls.mirage";
     "tyxml";
+    "syndic";
   ]
 
 let packages = [
     "cow";
     "tyxml";
-    "calendar";
+    "ptime";
     "decompress";
     "irmin";
     "mirage-http";
@@ -58,7 +59,8 @@ let packages = [
     "channel";
     "mirage-git";
     "re";
-    "cohttp"
+    "cohttp";
+    "syndic";
   ]
 
 
