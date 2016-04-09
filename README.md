@@ -18,8 +18,10 @@ You'll also need `bower` and `less-css` if you want to compile and retrieve ever
 Checkout Canopy repository, then go inside:
 
 ```sh
-# You need the latest Decompress version from git
-opam pin add decompress 'https://github.com/oklm-wsh/Decompress.git'
+# You need syndic using ptime, thus first install ptime
+opam install ptime
+# Then pin syndic to the branch where ptime is used
+opam pin add syndic https://github.com/Cumulus/syndic.git#ptime
 # Get js/css dependencies and compile Less files
 ./style.sh
 # Configure the mirage application
@@ -40,7 +42,7 @@ installed from specific branches.
 
 ```sh
 opam pin add dolog 'https://github.com/UnixJunkie/dolog.git#no_unix'
-opam pin add bin_prot 'https://github.com/samoht/bin_prot.git#112.35.00+xen'
+opam pin add bin_prot 'https://github.com/hannesm/bin_prot.git#113.33.00+xen'
 opam pin add crc 'https://github.com/yomimono/ocaml-crc.git#xen_linkopts'
 ```
 
