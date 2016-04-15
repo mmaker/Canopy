@@ -1,5 +1,43 @@
 open Mirage
 
+(* Shell commands to run at configure time *)
+type shellconfig = ShellConfig
+let shellconfig = Type ShellConfig
+
+let config_shell = impl @@ object
+    inherit base_configurable
+
+    method configure i =
+      let open Functoria_app.Cmd in
+      let (>>=) = Rresult.(>>=) in
+      let dir = Info.root i in
+
+      run "mkdir -p %s" (dir ^ "/disk/static/js") >>= fun () ->
+      run "mkdir -p %s" (dir ^ "/disk/static/css") >>= fun () ->
+      run "mkdir -p %s" (dir ^ "/disk/static/fonts") >>= fun () ->
+      let npm_query = run "which npm" |> Rresult.R.is_ok in
+      let lessc_query = run "which lessc" |> Rresult.R.is_ok in
+      let browserify_query = run "which browserify" |> Rresult.R.is_ok in
+      if (npm_query && lessc_query && browserify_query) then
+        (Printf.printf "npm, browserify and lessc found… fetching and compiling all assets\n";
+         run "cp assets/fonts/JosefinSans-SemiBold.ttf %s" (dir ^ "/disk/static/fonts") >>= fun () ->
+         run "npm install" >>= fun () ->
+         run "browserify assets/js/main.js -o disk/static/js/canopy.js" >>= fun () ->
+         run "lessc assets/less/style.less disk/static/css/style.css --source-map-map-inline --strict-imports" >>= fun () ->
+         run "cp node_modules/bootstrap/dist/css/bootstrap.min.css disk/static/css/bootstrap.min.css" >>= fun () ->
+         run "cp node_modules/highlight.js/styles/solarized-light.css disk/static/css/highlight.css")
+      else
+        Rresult.R.ok ()
+
+    method clean i = Functoria_app.Cmd.run "rm -r node_modules disk"
+
+    method module_name = "Functoria_runtime"
+    method name = "shell_config"
+    method ty = shellconfig
+end
+
+(* disk device *)
+
 let disk =
   let fs_key = Key.(value @@ kv_ro ()) in
   let fat_ro dir = generic_kv_ro ~key:fs_key dir in
@@ -89,7 +127,7 @@ let () =
   register "canopy" [
     foreign
       ~libraries
-      ~deps:[abstract nocrypto]
+      ~deps:[abstract nocrypto; abstract config_shell]
       ~keys
       ~packages
       "Canopy_main.Main"
