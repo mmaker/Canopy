@@ -28,6 +28,7 @@ module Make (S: Cohttp_lwt.Server) (C: V1_LWT.CONSOLE) (Disk: V1_LWT.KV_RO)
     let respond_html ~headers ~status ~content ~title =
       store.subkeys [] >>= fun keys ->
       let body = Canopy_templates.main ~config ~content ~title ~keys in
+      let headers = Cohttp.Header.add headers "Content-Type" "text/html; charset=UTF-8" in
       S.respond_string ~headers ~status ~body ()
     and respond_update = function
       | [] -> S.respond_string ~headers ~status:`OK ~body:"" ()
@@ -41,7 +42,9 @@ module Make (S: Cohttp_lwt.Server) (C: V1_LWT.CONSOLE) (Disk: V1_LWT.KV_RO)
       begin
         read_fs disk uri >>= function
         | None -> S.respond_string ~headers ~status:`Not_found ~body:"Not found" ()
-        | Some body -> S.respond_string ~headers ~status:`OK ~body ()
+        | Some body -> 
+          let headers = Cohttp.Header.add headers "Content-Type" (Magic_mime.lookup uri) in
+          S.respond_string ~headers ~status:`OK ~body ()
       end
     | "atom" :: [] ->
       atom () >>= fun body ->
