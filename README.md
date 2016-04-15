@@ -62,7 +62,6 @@ installed from specific branches.
 ```sh
 opam pin add dolog 'https://github.com/UnixJunkie/dolog.git#no_unix'
 opam pin add bin_prot 'https://github.com/hannesm/bin_prot.git#113.33.00+xen'
-opam pin add crc 'https://github.com/xapi-project/ocaml-crc.git'
 ```
 
 You can either build with support for DHCP or static ip, just specifying it as
