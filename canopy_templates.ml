@@ -36,49 +36,45 @@ let links keys =
     li [ a ~a:[a_href ("/" ^ link)] [span [pcdata link]]] in
  List.map format_link paths
 
-let script_mathjax =
-  [script ~a:[a_src "https://travis-ci.org/Engil/Canopy"] (pcdata "")]
-
 let main ~config ~content ~title ~keys =
   let links = links keys in
-  let mathjax = if config.mathjax then script_mathjax else [] in
   let page =
     html
       (head
-	 (Html5.M.title (pcdata title))
-	 ([
-	   meta ~a:[a_charset "UTF-8"] ();
-	   link ~rel:[`Stylesheet] ~href:"/static/bower/bootstrap/dist/css/bootstrap.min.css" ();
-	   link ~rel:[`Stylesheet] ~href:"/static/css/style.css" ();
-	   script ~a:[a_src "/static/bower/jquery/dist/jquery.min.js"] (pcdata "");
-	   script ~a:[a_src "/static/bower/bootstrap/dist/js/bootstrap.min.js"] (pcdata "");
-     link ~rel:[`Alternate] ~href:"/atom" ~a:[a_title title; a_mime_type "application/atom+xml"] ();
-	 ] ++ mathjax)
+         (Html5.M.title (pcdata title))
+         ([
+           meta ~a:[a_charset "UTF-8"] ();
+           link ~rel:[`Stylesheet] ~href:"/static/css/bootstrap.min.css" ();
+           link ~rel:[`Stylesheet] ~href:"/static/css/style.css" ();
+           link ~rel:[`Stylesheet] ~href:"/static/css/highlight.css" ();
+           script ~a:[a_src "/static/js/canopy.js"] (pcdata "");
+           link ~rel:[`Alternate] ~href:"/atom" ~a:[a_title title; a_mime_type "application/atom+xml"] ();
+         ])
       )
       (body
-	 [
-	   nav ~a:[a_class ["navbar navbar-default navbar-fixed-top"]] [
-		 div ~a:[a_class ["container"]] [
-		       div ~a:[a_class ["navbar-header"]] [
-			     button ~a:[a_class ["navbar-toggle collapsed"];
-					a_user_data "toggle" "collapse";
-					a_user_data "target" ".navbar-collapse"
-				       ] [
-				      span ~a:[a_class ["icon-bar"]][];
-				      span ~a:[a_class ["icon-bar"]][];
-				      span ~a:[a_class ["icon-bar"]][]
-				    ];
-			     a ~a:[a_class ["navbar-brand"]; a_href ("/" ^ config.index_page)][pcdata config.blog_name]
-			   ];
-		       div ~a:[a_class ["collapse navbar-collapse collapse"]] [
-			     ul ~a:[a_class ["nav navbar-nav navbar-right"]] links
-			   ]
-		     ]
-	       ];
-	   main [
-	       div ~a:[a_class ["flex-container"]] content
-	     ]
-	 ]
+         [
+           nav ~a:[a_class ["navbar navbar-default navbar-fixed-top"]] [
+             div ~a:[a_class ["container"]] [
+               div ~a:[a_class ["navbar-header"]] [
+                 button ~a:[a_class ["navbar-toggle collapsed"];
+                            a_user_data "toggle" "collapse";
+                            a_user_data "target" ".navbar-collapse"
+                           ] [
+                   span ~a:[a_class ["icon-bar"]][];
+                   span ~a:[a_class ["icon-bar"]][];
+                   span ~a:[a_class ["icon-bar"]][]
+                 ];
+                 a ~a:[a_class ["navbar-brand"]; a_href ("/" ^ config.index_page)][pcdata config.blog_name]
+               ];
+               div ~a:[a_class ["collapse navbar-collapse collapse"]] [
+                 ul ~a:[a_class ["nav navbar-nav navbar-right"]] links
+               ]
+             ]
+           ];
+           main [
+             div ~a:[a_class ["flex-container"]] content
+           ]
+         ]
       )
   in
   StringHtml.print page

@@ -28,7 +28,7 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
     X509.certificate kv `Default >|= fun cert ->
     Tls.Config.server ~certificates:(`Single cert) ()
 
-  let start console stack resolver conduit disk _clock keys _ =
+  let start console stack resolver conduit disk _clock keys _ _ =
     let module Context =
       ( struct
         let v _ = Lwt.return_some (resolver, conduit)
