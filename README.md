@@ -32,7 +32,7 @@ header (containing `max-age=31536000; includeSubDomains`).
 ### Compiling and running Canopy
 
 You will need at least `OCaml 4.02.3`, `opam 1.2` and `mirage 2.7.0` before starting. To setup a mirage environment, please refer to the mirage website.
-You'll also need `bower` and `less-css` if you want to compile and retrieve everything related to the blog-styling (not needed to just test things out).
+You'll also need `bower`, `less-css` and `browserify` if you want to compile and retrieve everything related to the blog-styling. The `mirage configure` step takes care of fetching and recompiling all assets. If none of the mentionned programs were to be found, the configure step will use the tarball found in the `assets` directory, containing already compiled assets.
 
 Checkout Canopy repository, then go inside:
 
@@ -41,9 +41,7 @@ Checkout Canopy repository, then go inside:
 opam install ptime
 # Then pin syndic to the branch where ptime is used
 opam pin add syndic https://github.com/Cumulus/syndic.git#ptime
-# Get js/css dependencies and compile Less files
-./style.sh
-# Configure the mirage application
+# Configure the mirage application, compile assets
 mirage configure --unix
 # Compile Canopy
 make
