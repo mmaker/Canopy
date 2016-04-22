@@ -32,7 +32,7 @@ let (++) = List.append
 
 let ptime_to_pretty_date t =
   Ptime.to_date t |> fun (y, m, d) ->
-    Printf.sprintf "%02d.%02d.%04d" d m y
+    Printf.sprintf "%04d-%02d-%02d" y m d
 
 module KeyHashtbl = struct
     module KeyHash = struct
