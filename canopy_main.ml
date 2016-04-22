@@ -81,7 +81,7 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
          ) >>= fun () ->
        tls_init keys >>= fun tls_conf ->
        let hdr = Cohttp.Header.init_with
-           "Strict-Transport-Security" "max-age=31536000; includeSubDomains"
+           "Strict-Transport-Security" "max-age=31536000" (* in seconds, roughly a year *)
        in
        let callback = HTTPS.listen (DS.create console (disp hdr)) in
        let https flow = with_tls console tls_conf flow callback in
