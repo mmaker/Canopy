@@ -47,9 +47,12 @@ let to_tyxml_listing_entry article =
   let abstract = match article.abstract with
     | None -> []
     | Some abstract -> [p ~a:[a_class ["list-group-item-text abstract"]] [pcdata abstract]] in
+  let created = ptime_to_pretty_date article.created in
   let content = [
       h4 ~a:[a_class ["list-group-item-heading"]] [pcdata article.title];
       span ~a:[a_class ["author"]] [pcdata author];
+      pcdata " ";
+      pcdata "("; time [pcdata created]; pcdata ")";
       br ();
     ] in
   a ~a:[a_href article.uri; a_class ["list-group-item"]] (content ++ abstract)
