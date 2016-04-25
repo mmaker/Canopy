@@ -29,6 +29,10 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
     Tls.Config.server ~certificates:(`Single cert) ()
 
   let start console stack resolver conduit disk _clock keys _ _ =
+    let started = match Ptime.of_float_s (CLOCK.time ()) with
+      | None -> invalid_arg ("Ptime.of_float_s")
+      | Some t -> t
+    in
     let module Context =
       ( struct
         let v _ = Lwt.return_some (resolver, conduit)
@@ -48,15 +52,16 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
       update =
         (fun () ->
           KeyHashtbl.clear cache ;
-	  Store.pull console >>= fun () ->
+          Store.pull console >>= fun () ->
           Store.fill_cache cache >>= fun res ->
           update_atom () >|= fun () ->
-          res)
+          res);
+      last_commit = Store.last_commit_date ;
     } in
     store_ops.Canopy_dispatch.update () >>= fun l ->
     Lwt_list.iter_p (C.log_s console) l >>= fun () ->
     let disp hdr =
-      `Dispatch (config, hdr, disk, store_ops, atom, cache)
+      `Dispatch (config, hdr, disk, store_ops, atom, cache, started)
     in
     (match config.tls_port with
      | Some tls_port ->
