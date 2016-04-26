@@ -49,12 +49,14 @@ let to_atom = function
 
 let find_tag tagname = function
   | Markdown m ->
-     let open Canopy_article in
-     List.exists ((=) tagname) m.tags
+     List.exists ((=) tagname) m.Canopy_article.tags
 
 let date = function
   | Markdown m ->
-     let open Canopy_article in
-     m.created
+     m.Canopy_article.created
 
 let compare a b = Ptime.compare (date b) (date a)
+
+let updated = function
+  | Markdown m ->
+    m.Canopy_article.updated

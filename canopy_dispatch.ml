@@ -74,7 +74,7 @@ module Make (S: Cohttp_lwt.Server) (C: V1_LWT.CONSOLE) (Disk: V1_LWT.KV_RO)
       match sorted with
       | [] -> respond_not_found ()
       | a::_ ->
-        let updated = Canopy_content.date a in
+        let updated = Canopy_content.updated a in
         let content = sorted
                       |> List.map Canopy_content.to_tyxml_listing_entry
                       |> Canopy_templates.listing
@@ -94,7 +94,7 @@ module Make (S: Cohttp_lwt.Server) (C: V1_LWT.CONSOLE) (Disk: V1_LWT.KV_RO)
             | [] -> respond_not_found ()
             | a::_ -> (
                 let sorted = List.sort Canopy_content.compare articles in
-                let updated = Canopy_content.date a in
+                let updated = Canopy_content.updated a in
                 let content = sorted
                               |> List.map Canopy_content.to_tyxml_listing_entry
                               |> Canopy_templates.listing
@@ -103,7 +103,7 @@ module Make (S: Cohttp_lwt.Server) (C: V1_LWT.CONSOLE) (Disk: V1_LWT.KV_RO)
               ))
         | Some article ->
           let title, content = Canopy_content.to_tyxml article in
-          let updated = Canopy_content.date article in
+          let updated = Canopy_content.updated article in
           respond_html ~headers ~title ~content ~updated
       end
 
