@@ -73,8 +73,8 @@ module Make (S: Cohttp_lwt.Server) (C: V1_LWT.CONSOLE) (Disk: V1_LWT.KV_RO)
       let sorted = KeyHashtbl.fold aux cache [] |> List.sort Canopy_content.compare in
       match sorted with
       | [] -> respond_not_found ()
-      | a::_ ->
-        let updated = Canopy_content.updated a in
+      | _ ->
+        let updated = List.hd (List.rev (List.sort Ptime.compare (List.map Canopy_content.updated sorted))) in
         let content = sorted
                       |> List.map Canopy_content.to_tyxml_listing_entry
                       |> Canopy_templates.listing
@@ -92,9 +92,9 @@ module Make (S: Cohttp_lwt.Server) (C: V1_LWT.CONSOLE) (Disk: V1_LWT.KV_RO)
             let articles = List.map (KeyHashtbl.find_opt cache) keys |> list_reduce_opt in
             match articles with
             | [] -> respond_not_found ()
-            | a::_ -> (
+            | _ -> (
                 let sorted = List.sort Canopy_content.compare articles in
-                let updated = Canopy_content.updated a in
+                let updated = List.hd (List.rev (List.sort Ptime.compare (List.map Canopy_content.updated articles))) in
                 let content = sorted
                               |> List.map Canopy_content.to_tyxml_listing_entry
                               |> Canopy_templates.listing
