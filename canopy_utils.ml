@@ -35,16 +35,31 @@ let ptime_to_pretty_date t =
     Printf.sprintf "%04d-%02d-%02d" y m d
 
 module KeyHashtbl = struct
-    module KeyHash = struct
-	type t = string list
-	let equal = (=)
-	let hash = Hashtbl.hash
-      end
+  module KeyHash = struct
+    type t = string list
+    let equal = (=)
+    let hash = Hashtbl.hash
+  end
 
-    module H = Hashtbl.Make(KeyHash)
-    include H
+  module H = Hashtbl.Make(KeyHash)
+  include H
 
-    let find_opt t k =
-      try Some (H.find t k) with
-      | Not_found -> None
+  let find_opt t k =
+    try Some (H.find t k) with
+    | Not_found -> None
 end
+
+let add_etag_header time headers =
+  Cohttp.Header.add headers "Etag" (Ptime.to_rfc3339 time)
+
+let html_headers headers time =
+  Cohttp.Header.add headers "Content-Type" "text/html; charset=UTF-8"
+  |> add_etag_header time
+
+let atom_headers headers time =
+  Cohttp.Header.add headers "Content-Type" "application/atom+xml; charset=UTF-8"
+  |> add_etag_header time
+
+let static_headers headers uri time =
+  Cohttp.Header.add headers "Content-Type" (Magic_mime.lookup uri)
+  |> add_etag_header time
