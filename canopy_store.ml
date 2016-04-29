@@ -30,7 +30,7 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     let acc = ref (Lwt.return acc) in
     let mut = Lwt_mutex.create () in
     Store.iter t (fun k v ->
-		  Lwt_mutex.with_lock mut
+      Lwt_mutex.with_lock mut
                  (fun _ -> !acc >>= fun acc' -> (acc := (fn k v acc')) |> Lwt.return))
     >>= fun _ -> !acc
 
@@ -53,24 +53,24 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
       match to_visit with
       | [] -> Lwt.return last_commit
       | commit::to_visit ->
-	 Store.of_commit_id (Irmin.Task.none) commit repo >>= fun store ->
-	 Store.read (store ()) keys >>= fun readed_file ->
-	 let visited = commit::visited in
-	 match readed_file with
-	 | Some _ ->
-	    let to_visit =
-	      ( match Store.History.pred history commit with
-		| [] -> to_visit
-		| pred::pred2::[] ->
-		   let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
-		   let to_visit = if ((List.mem pred2 visited) = false) then pred2::to_visit else to_visit in
-		   to_visit
-		| pred::[] ->
-		   let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
-		   to_visit
-		| q -> print_endline "weird"; List.append (List.rev q) to_visit)
-	    in aux commit visited to_visit
-	 | None -> Lwt.return last_commit in
+   Store.of_commit_id (Irmin.Task.none) commit repo >>= fun store ->
+   Store.read (store ()) keys >>= fun readed_file ->
+   let visited = commit::visited in
+   match readed_file with
+   | Some _ ->
+      let to_visit =
+        ( match Store.History.pred history commit with
+    | [] -> to_visit
+    | pred::pred2::[] ->
+       let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
+       let to_visit = if ((List.mem pred2 visited) = false) then pred2::to_visit else to_visit in
+       to_visit
+    | pred::[] ->
+       let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
+       to_visit
+    | q -> print_endline "weird"; List.append (List.rev q) to_visit)
+      in aux commit visited to_visit
+   | None -> Lwt.return last_commit in
     aux commit [] [commit]
 
   let last_updated_commit_id commit key =
@@ -110,7 +110,7 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     | Some a, Some b -> Lwt.return (a, b)
     | _ -> raise (Invalid_argument "date_updated_last")
 
-  let fill_cache article_hashtbl =
+  let fill_cache article_map =
     let open Canopy_content in
     let key_to_path key = List.fold_left (fun a b -> a ^ "/" ^ b) "" key in
     let fold_fn key value acc =
@@ -118,13 +118,15 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
       date_updated_created key >>= fun (updated, created) ->
       let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
       match of_string ~uri ~content ~created ~updated with
-	| Ok article -> (KeyHashtbl.replace article_hashtbl key article; Lwt.return acc)
-	| Error error ->
-	   let error_msg = Printf.sprintf "Error while parsing %s: %s" (key_to_path key) error in
-	   Lwt.return (error_msg::acc)
-	| Unknown ->
-	   let error_msg = Printf.sprintf "%s : Unknown content type" (key_to_path key) in
-	   Lwt.return (error_msg::acc)
+      | Ok article -> (
+          article_map := KeyMap.add key article !article_map;
+          Lwt.return acc)
+      | Error error ->
+        let error_msg = Printf.sprintf "Error while parsing %s: %s" (key_to_path key) error in
+        Lwt.return (error_msg::acc)
+      | Unknown ->
+        let error_msg = Printf.sprintf "%s : Unknown content type" (key_to_path key) in
+        Lwt.return (error_msg::acc)
     in
     new_task () >>= fun t ->
     fold (t "Folding through values") fold_fn []

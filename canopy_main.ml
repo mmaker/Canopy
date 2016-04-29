@@ -40,22 +40,22 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
     in
     let module Store = Canopy_store.Store(C)(Context)(Inflator) in
     let open Canopy_utils in
-    let cache = KeyHashtbl.create 32 in
+    let cache = ref (KeyMap.empty) in
     let open Canopy_config in
     let config = config () in
     let update_atom, atom =
-      Canopy_syndic.atom config Store.last_commit_date cache
+      Canopy_syndic.atom config Store.last_commit_date !cache
     in
     let store_ops = {
       Canopy_dispatch.subkeys = Store.get_subkeys ;
       value = Store.get_key ;
       update =
         (fun () ->
-          KeyHashtbl.clear cache ;
-          Store.pull console >>= fun () ->
-          Store.fill_cache cache >>= fun res ->
-          update_atom () >|= fun () ->
-          res);
+           cache := KeyMap.empty;
+           Store.pull console >>= fun () ->
+           Store.fill_cache cache >>= fun res ->
+           update_atom () >|= fun () ->
+           res);
       last_commit = Store.last_commit_date ;
     } in
     store_ops.Canopy_dispatch.update () >>= fun l ->

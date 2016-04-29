@@ -34,18 +34,23 @@ let ptime_to_pretty_date t =
   Ptime.to_date t |> fun (y, m, d) ->
     Printf.sprintf "%04d-%02d-%02d" y m d
 
-module KeyHashtbl = struct
-  module KeyHash = struct
+module KeyMap = struct
+  module KeyOrd = struct
     type t = string list
-    let equal = (=)
-    let hash = Hashtbl.hash
+    let compare a b =
+      match compare (List.length a) (List.length b) with
+      | 0 -> (
+          try List.find ((<>) 0) (List.map2 String.compare a b)
+          with Not_found -> 0
+        )
+      | x -> x
   end
 
-  module H = Hashtbl.Make(KeyHash)
-  include H
+  module M = Map.Make(KeyOrd)
+  include M
 
-  let find_opt t k =
-    try Some (H.find t k) with
+  let find_opt m k =
+    try Some (M.find k m) with
     | Not_found -> None
 end
 
