@@ -70,7 +70,7 @@ module Make (S: Cohttp_lwt.Server) (C: V1_LWT.CONSOLE) (Disk: V1_LWT.KV_RO)
       let aux _ v l =
         if Canopy_content.find_tag tagname v then (v::l) else l
       in
-      let sorted = KeyHashtbl.fold aux cache [] |> List.sort Canopy_content.compare in
+      let sorted = KeyMap.fold aux !cache [] |> List.sort Canopy_content.compare in
       match sorted with
       | [] -> respond_not_found ()
       | _ ->
@@ -83,13 +83,13 @@ module Make (S: Cohttp_lwt.Server) (C: V1_LWT.CONSOLE) (Disk: V1_LWT.KV_RO)
       )
      | key ->
       begin
-        match KeyHashtbl.find_opt cache key with
+        match KeyMap.find_opt !cache key with
         | None -> (
           store.subkeys key >>= fun keys ->
           if (List.length keys) = 0 then
             respond_not_found ()
           else
-            let articles = List.map (KeyHashtbl.find_opt cache) keys |> list_reduce_opt in
+            let articles = List.map (KeyMap.find_opt !cache) keys |> list_reduce_opt in
             match articles with
             | [] -> respond_not_found ()
             | _ -> (

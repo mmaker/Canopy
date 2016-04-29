@@ -6,7 +6,7 @@ open Canopy_config
 let atom config last_commit_date content_cache =
   let cache = ref None in
   let update_atom () =
-    let l = KeyHashtbl.fold (fun _ x acc -> x :: acc) content_cache []
+    let l = KeyMap.fold (fun _ x acc -> x :: acc) content_cache []
             |> List.sort Canopy_content.compare
             |> resize 10 in
     let entries = List.map Canopy_content.to_atom l in
@@ -26,4 +26,3 @@ let atom config last_commit_date content_cache =
   (fun () -> match !cache with
      | Some body -> Lwt.return body
      | None -> update_atom ())
-
