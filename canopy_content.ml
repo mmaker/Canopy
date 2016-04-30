@@ -4,7 +4,7 @@ type content_t =
   | Markdown of Canopy_article.t
 
 type error_t =
-  Unknown
+    Unknown
   | Error of string
   | Ok of content_t
 
@@ -21,25 +21,25 @@ let of_string ~uri ~created ~updated ~content =
   let splitted_content = Re_str.bounded_split (Re_str.regexp "---") content 2 in
   match splitted_content with
   | [raw_meta;raw_content] ->
-     begin
-       match meta_assoc raw_meta with
-       | meta ->
-	  begin
-	    match assoc_opt "content" meta with
-	    | Some "markdown"
-	    | None ->
-	       Canopy_article.of_string meta uri created updated raw_content
-	       |> map_opt (fun article -> Ok (Markdown article)) (Error "Error while parsing article")
-	    | Some _ -> Unknown
-	  end
-       | exception _ -> Unknown
-     end
+    begin
+      match meta_assoc raw_meta with
+      | meta ->
+        begin
+          match assoc_opt "content" meta with
+          | Some "markdown"
+          | None ->
+            Canopy_article.of_string meta uri created updated raw_content
+            |> map_opt (fun article -> Ok (Markdown article)) (Error "Error while parsing article")
+          | Some _ -> Unknown
+        end
+      | exception _ -> Unknown
+    end
   | _ -> Error "No header found"
 
 let to_tyxml = function
   | Markdown m ->
-     let open Canopy_article in
-     m.title, to_tyxml m
+    let open Canopy_article in
+    m.title, to_tyxml m
 
 let to_tyxml_listing_entry = function
   | Markdown m -> Canopy_article.to_tyxml_listing_entry m
@@ -49,14 +49,24 @@ let to_atom = function
 
 let find_tag tagname = function
   | Markdown m ->
-     List.exists ((=) tagname) m.Canopy_article.tags
+    List.exists ((=) tagname) m.Canopy_article.tags
 
 let date = function
   | Markdown m ->
-     m.Canopy_article.created
+    m.Canopy_article.created
 
 let compare a b = Ptime.compare (date b) (date a)
 
 let updated = function
   | Markdown m ->
     m.Canopy_article.updated
+
+let tags content_map =
+  let module S = Set.Make(String) in
+  let s = KeyMap.fold (
+      fun k v s -> match v with
+        | Markdown m ->
+          let s' = S.of_list m.Canopy_article.tags in
+          S.union s s')
+      content_map S.empty
+  in S.elements s

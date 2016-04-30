@@ -33,14 +33,14 @@ let to_tyxml article =
   in
   let tags = Canopy_templates.taglist article.tags in
   [div ~a:[a_class ["post"]] [
-	 h2 [pcdata article.title];
-	 span ~a:[a_class ["author"]] [pcdata author];
-	 br ();
-	 tags;
-	 span ~a:[a_class ["date"]] [pcdata updated];
-	 br ();
-	 Html5.M.article [Unsafe.data article.content]
-       ]]
+      h2 [pcdata article.title];
+      span ~a:[a_class ["author"]] [pcdata author];
+      br ();
+      tags;
+      span ~a:[a_class ["date"]] [pcdata updated];
+      br ();
+      Html5.M.article [Unsafe.data article.content]
+    ]]
 
 let to_tyxml_listing_entry article =
   let author = "Written by " ^ article.author in
@@ -49,13 +49,27 @@ let to_tyxml_listing_entry article =
     | Some abstract -> [p ~a:[a_class ["list-group-item-text abstract"]] [pcdata abstract]] in
   let created = ptime_to_pretty_date article.created in
   let content = [
-      h4 ~a:[a_class ["list-group-item-heading"]] [pcdata article.title];
-      span ~a:[a_class ["author"]] [pcdata author];
-      pcdata " ";
-      pcdata "("; time [pcdata created]; pcdata ")";
-      br ();
-    ] in
+    h4 ~a:[a_class ["list-group-item-heading"]] [pcdata article.title];
+    span ~a:[a_class ["author"]] [pcdata author];
+    pcdata " ";
+    pcdata "("; time [pcdata created]; pcdata ")";
+    br ();
+  ] in
   a ~a:[a_href article.uri; a_class ["list-group-item"]] (content ++ abstract)
+
+let to_tyxml_tags tags =
+  let format_tag tag =
+    let taglink = Printf.sprintf "/tags/%s" in
+    a ~a:[taglink tag |> a_href; a_class ["list-group-item"]] [pcdata tag] in
+  let html = match tags with
+    | [] -> div []
+    | tags ->
+      let tags = List.map format_tag tags in
+      p ~a:[a_class ["tags"]] tags
+  in
+  [div ~a:[a_class ["post"]] [
+      h2 [pcdata "Tags"];
+      div ~a:[a_class ["list-group listing"]] [html]]]
 
 let to_atom ({ title; author; abstract; uri; created; updated; tags; content; } as article) =
   let text x : Syndic.Atom.text_construct = Syndic.Atom.Text x in

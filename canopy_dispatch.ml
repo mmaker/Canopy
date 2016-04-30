@@ -66,67 +66,73 @@ module Make (S: Cohttp_lwt.Server) (C: V1_LWT.CONSOLE) (Disk: V1_LWT.KV_RO)
     | uri::[] when uri = config.Canopy_config.push_hook_path ->
       store.update () >>= fun l ->
       respond_update l
-    | "tags"::tagname::_ -> (
-      let aux _ v l =
-        if Canopy_content.find_tag tagname v then (v::l) else l
-      in
-      let sorted = KeyMap.fold aux !cache [] |> List.sort Canopy_content.compare in
-      match sorted with
-      | [] -> respond_not_found ()
-      | _ ->
-        let updated = List.hd (List.rev (List.sort Ptime.compare (List.map Canopy_content.updated sorted))) in
-        let content = sorted
-                      |> List.map Canopy_content.to_tyxml_listing_entry
-                      |> Canopy_templates.listing
-        in
-        respond_html ~headers ~title:config.Canopy_config.blog_name ~content ~updated
+    | "tags"::[] -> (
+      let tags = Canopy_content.tags !cache in
+      let content = Canopy_article.to_tyxml_tags tags in
+      store.last_commit () >>= fun updated ->
+      respond_html ~headers ~title:config.Canopy_config.blog_name ~content ~updated
       )
-     | key ->
+    | "tags"::tagname::_ -> (
+        let aux _ v l =
+          if Canopy_content.find_tag tagname v then (v::l) else l
+        in
+        let sorted = KeyMap.fold aux !cache [] |> List.sort Canopy_content.compare in
+        match sorted with
+        | [] -> respond_not_found ()
+        | _ ->
+          let updated = List.hd (List.rev (List.sort Ptime.compare (List.map Canopy_content.updated sorted))) in
+          let content = sorted
+                        |> List.map Canopy_content.to_tyxml_listing_entry
+                        |> Canopy_templates.listing
+          in
+          respond_html ~headers ~title:config.Canopy_config.blog_name ~content ~updated
+      )
+    | key ->
       begin
         match KeyMap.find_opt !cache key with
         | None -> (
-          store.subkeys key >>= fun keys ->
-          if (List.length keys) = 0 then
-            respond_not_found ()
-          else
-            let articles = List.map (KeyMap.find_opt !cache) keys |> list_reduce_opt in
-            match articles with
-            | [] -> respond_not_found ()
-            | _ -> (
-                let sorted = List.sort Canopy_content.compare articles in
-                let updated = List.hd (List.rev (List.sort Ptime.compare (List.map Canopy_content.updated articles))) in
-                let content = sorted
-                              |> List.map Canopy_content.to_tyxml_listing_entry
-                              |> Canopy_templates.listing
-                in
-                respond_html ~headers ~title:config.Canopy_config.blog_name ~content ~updated
-              ))
+            store.subkeys key >>= fun keys ->
+            if (List.length keys) = 0 then
+              respond_not_found ()
+            else
+              let articles = List.map (KeyMap.find_opt !cache) keys |> list_reduce_opt in
+              match articles with
+              | [] -> respond_not_found ()
+              | _ -> (
+                  let sorted = List.sort Canopy_content.compare articles in
+                  let updated = List.hd (List.rev (List.sort Ptime.compare (List.map Canopy_content.updated articles))) in
+                  let content = sorted
+                                |> List.map Canopy_content.to_tyxml_listing_entry
+                                |> Canopy_templates.listing
+                  in
+                  respond_html ~headers ~title:config.Canopy_config.blog_name ~content ~updated
+                ))
         | Some article ->
           let title, content = Canopy_content.to_tyxml article in
           let updated = Canopy_content.updated article in
           respond_html ~headers ~title ~content ~updated
       end
 
-    let create console dispatch =
-      let conn_closed (_, conn_id) =
-        let cid = Cohttp.Connection.to_string conn_id in
-        C.log console (Printf.sprintf "conn %s closed" cid)
-      in
-      let callback = match dispatch with
-        | `Redirect fn ->
-          (fun _ request _ ->
-             let req = Cohttp.Request.uri request in
-             let uri = fn req in
-             C.log_s console (Printf.sprintf "redirecting to %s" (Uri.to_string uri)) >>= fun () ->
-             moved_permanently uri)
-        | `Dispatch (config, headers, disk, store, atom, content, time) ->
-          (fun _ request _ ->
-             let uri = Cohttp.Request.uri request in
-             let etag = Cohttp.Header.get Cohttp.Request.(request.headers) "if-none-match" in
-             C.log_s console (Printf.sprintf "request %s" (Uri.to_string uri)) >>= fun () ->
-             dispatcher config headers console disk store atom content (Uri.path uri) etag time)
-      in
-      S.make ~callback ~conn_closed ()
+  let create console dispatch =
+    let conn_closed (_, conn_id) =
+      let cid = Cohttp.Connection.to_string conn_id in
+      C.log console (Printf.sprintf "conn %s closed" cid)
+    in
+    let callback = match dispatch with
+      | `Redirect fn ->
+        (fun _ request _ ->
+           let req = Cohttp.Request.uri request in
+           let uri = fn req in
+           C.log_s console (Printf.sprintf "redirecting to %s" (Uri.to_string uri)) >>= fun () ->
+           moved_permanently uri)
+      | `Dispatch (config, headers, disk, store, atom, content, time) ->
+        (fun _ request _ ->
+           let uri = Cohttp.Request.uri request in
+           let etag = Cohttp.Header.get Cohttp.Request.(request.headers) "if-none-match" in
+           C.log_s console (Printf.sprintf "request %s" (Uri.to_string uri)) >>= fun () ->
+           dispatcher config headers console disk store atom content (Uri.path uri) etag time)
+    in
+    S.make ~callback ~conn_closed ()
 
 
 end
