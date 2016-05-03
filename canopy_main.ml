@@ -44,7 +44,7 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
     let open Canopy_config in
     let config = config () in
     let update_atom, atom =
-      Canopy_syndic.atom config Store.last_commit_date !cache
+      Canopy_syndic.atom config Store.last_commit_date cache
     in
     let store_ops = {
       Canopy_dispatch.subkeys = Store.get_subkeys ;
