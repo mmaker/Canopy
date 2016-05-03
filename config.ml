@@ -18,7 +18,6 @@ let config_shell = impl @@ object
 
       run "mkdir -p %s" (dir ^ "/disk/static/js") >>= fun () ->
       run "mkdir -p %s" (dir ^ "/disk/static/css") >>= fun () ->
-      run "mkdir -p %s" (dir ^ "/disk/static/fonts") >>= fun () ->
       if Key.get (Info.context i) no_assets_k
       then Rresult.Ok ()
       else
@@ -27,7 +26,6 @@ let config_shell = impl @@ object
         let browserify_query = run "which browserify" |> Rresult.R.is_ok in
         if (npm_query && lessc_query && browserify_query) then
           (Printf.printf "npm, browserify and lessc found… fetching and compiling all assets\n";
-           run "cp assets/fonts/JosefinSans-SemiBold.ttf %s" (dir ^ "/disk/static/fonts") >>= fun () ->
            run "npm install" >>= fun () ->
            run "browserify assets/js/main.js -o disk/static/js/canopy.js" >>= fun () ->
            run "lessc assets/less/style.less disk/static/css/style.css --source-map-map-inline --strict-imports" >>= fun () ->

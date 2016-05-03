@@ -3,20 +3,19 @@
 // ===================
 
 // @import url(https://fonts.googleapis.com/css?family=Josefin+Sans:600);
-@font-face {
-    font-family: "Josefin Sans";
-    src: url(/static/fonts/JosefinSans-SemiBold.ttf);
-}
-
-@Sans: "Josefin Sans", sans-serif;
 @HelveticaNeue: "Helvetica Neue", Helvetica, Arial, sans-serif;
 
 h2 {
     margin-bottom: 3px;
+    color: @DarkGreyColor;
+}
+
+main {
+    font-size: 0.95em;
 }
 
 .post-title {
-    font-size: 1.3em;
+    font-size: 1.2em;
 }
 
 .author {
@@ -32,10 +31,6 @@ h2 {
 time {
     font-size: 0.7em;
     color: @DateColor;
-}
-
-.MathJax {
-    font-size: 2em !important; // TODO: remove !important
 }
 
 footer {
