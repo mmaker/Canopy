@@ -69,8 +69,10 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
                 let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
                 to_visit
               | q -> print_endline "weird"; List.append (List.rev q) to_visit)
-          in aux commit visited to_visit
-        | None -> Lwt.return last_commit in
+          in
+          aux commit visited to_visit
+        | None -> Lwt.return last_commit
+    in
     aux commit [] [commit]
 
   let last_updated_commit_id commit key =
@@ -91,8 +93,8 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
         Lwt.return (res, matching)
       | None -> Lwt.return (commit_id, true) in
     Store.history (t "Reading history") >>= fun history ->
-    Topological.fold aux history (Lwt.return (commit, false))
-    >>= fun (c, _) -> Lwt.return c
+    Topological.fold aux history (Lwt.return (commit, false)) >|= fun (c, _) ->
+    c
 
   let date_updated_created key =
     new_task () >>= fun t  ->
