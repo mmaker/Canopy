@@ -100,13 +100,10 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     Store.head_exn (t "Finding head") >>= fun head ->
     last_updated_commit_id head key >>= fun updated_commit_id ->
     created_commit_id head key >>= fun created_commit_id ->
-    Store.Repo.task_of_commit_id repo updated_commit_id >>= fun task ->
-    let date = Irmin.Task.date task |> Int64.to_float in
-    let updated_date = Ptime.of_float_s date in
-    Store.Repo.task_of_commit_id repo created_commit_id >>= fun task ->
-    let date = Irmin.Task.date task |> Int64.to_float in
-    let created_date = Ptime.of_float_s date in
-    match updated_date, created_date with
+    let to_ptime task = Irmin.Task.date task |> Int64.to_float |> Ptime.of_float_s in
+    Store.Repo.task_of_commit_id repo updated_commit_id >>= fun updated ->
+    Store.Repo.task_of_commit_id repo created_commit_id >>= fun created ->
+    match to_ptime updated, to_ptime created with
     | Some a, Some b -> Lwt.return (a, b)
     | _ -> raise (Invalid_argument "date_updated_last")
 
