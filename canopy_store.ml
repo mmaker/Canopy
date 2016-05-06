@@ -112,20 +112,19 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
 
   let fill_cache article_map =
     let open Canopy_content in
-    let key_to_path key = List.fold_left (fun a b -> a ^ "/" ^ b) "" key in
     let fold_fn key value acc =
       value () >>= fun content ->
       date_updated_created key >>= fun (updated, created) ->
-      let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
+      let uri = String.concat "/" key in
       match of_string ~uri ~content ~created ~updated with
       | Ok article ->
         article_map := KeyMap.add key article !article_map;
         Lwt.return acc
       | Error error ->
-        let error_msg = Printf.sprintf "Error while parsing %s: %s" (key_to_path key) error in
+        let error_msg = Printf.sprintf "Error while parsing %s: %s" uri error in
         Lwt.return (error_msg::acc)
       | Unknown ->
-        let error_msg = Printf.sprintf "%s : Unknown content type" (key_to_path key) in
+        let error_msg = Printf.sprintf "%s : Unknown content type" uri in
         Lwt.return (error_msg::acc)
     in
     new_task () >>= fun t ->
