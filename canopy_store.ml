@@ -118,9 +118,9 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
       date_updated_created key >>= fun (updated, created) ->
       let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
       match of_string ~uri ~content ~created ~updated with
-      | Ok article -> (
-          article_map := KeyMap.add key article !article_map;
-          Lwt.return acc)
+      | Ok article ->
+        article_map := KeyMap.add key article !article_map;
+        Lwt.return acc
       | Error error ->
         let error_msg = Printf.sprintf "Error while parsing %s: %s" (key_to_path key) error in
         Lwt.return (error_msg::acc)
