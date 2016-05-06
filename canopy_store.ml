@@ -53,24 +53,24 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
       match to_visit with
       | [] -> Lwt.return last_commit
       | commit::to_visit ->
-   Store.of_commit_id (Irmin.Task.none) commit repo >>= fun store ->
-   Store.read (store ()) keys >>= fun readed_file ->
-   let visited = commit::visited in
-   match readed_file with
-   | Some _ ->
-      let to_visit =
-        ( match Store.History.pred history commit with
-    | [] -> to_visit
-    | pred::pred2::[] ->
-       let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
-       let to_visit = if ((List.mem pred2 visited) = false) then pred2::to_visit else to_visit in
-       to_visit
-    | pred::[] ->
-       let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
-       to_visit
-    | q -> print_endline "weird"; List.append (List.rev q) to_visit)
-      in aux commit visited to_visit
-   | None -> Lwt.return last_commit in
+        Store.of_commit_id (Irmin.Task.none) commit repo >>= fun store ->
+        Store.read (store ()) keys >>= fun readed_file ->
+        let visited = commit::visited in
+        match readed_file with
+        | Some _ ->
+          let to_visit =
+            ( match Store.History.pred history commit with
+              | [] -> to_visit
+              | pred::pred2::[] ->
+                let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
+                let to_visit = if ((List.mem pred2 visited) = false) then pred2::to_visit else to_visit in
+                to_visit
+              | pred::[] ->
+                let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
+                to_visit
+              | q -> print_endline "weird"; List.append (List.rev q) to_visit)
+          in aux commit visited to_visit
+        | None -> Lwt.return last_commit in
     aux commit [] [commit]
 
   let last_updated_commit_id commit key =
