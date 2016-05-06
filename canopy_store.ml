@@ -45,68 +45,39 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
          let msg = Printf.sprintf "Fail pull %s" (Printexc.to_string e) in
          Lwt.return (C.log console msg))
 
-  let created_commit_id commit keys =
+  let created_updated_ids commit key =
+    Printf.printf "dealing with key %s\n%!" (String.concat "/" key) ;
     repo () >>= fun repo ->
     Store.master task repo >>= fun t  ->
     Store.history (t "Reading history") >>= fun history ->
-    let rec aux last_commit visited to_visit =
-      match to_visit with
-      | [] -> Lwt.return last_commit
-      | commit::to_visit ->
-        Store.of_commit_id (Irmin.Task.none) commit repo >>= fun store ->
-        Store.read (store ()) keys >>= fun readed_file ->
-        let visited = commit::visited in
-        match readed_file with
-        | Some _ ->
-          let to_visit =
-            ( match Store.History.pred history commit with
-              | [] -> to_visit
-              | pred::pred2::[] ->
-                let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
-                let to_visit = if ((List.mem pred2 visited) = false) then pred2::to_visit else to_visit in
-                to_visit
-              | pred::[] ->
-                let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
-                to_visit
-              | q -> print_endline "weird"; List.append (List.rev q) to_visit)
-          in
-          aux commit visited to_visit
-        | None -> Lwt.return last_commit
-    in
-    aux commit [] [commit]
-
-  let last_updated_commit_id commit key =
-    repo () >>= fun repo ->
-    new_task () >>= fun t  ->
-    Store.read_exn (t "Reading file") key >>= fun current_file ->
     let aux commit_id acc =
-      acc >>= fun (acc, matched) ->
       Store.of_commit_id (Irmin.Task.none) commit_id repo >>= fun store ->
-      Store.read (store ()) key >>= fun readed_file ->
-      match readed_file with
-      | Some readed_file ->
-        let matching = current_file = readed_file in
-        let res =
-          if current_file = readed_file
-          then if matched then acc else commit_id
-          else commit_id in
-        Lwt.return (res, matching)
-      | None -> Lwt.return (commit_id, true) in
-    Store.history (t "Reading history") >>= fun history ->
-    Topological.fold aux history (Lwt.return (commit, false)) >|= fun (c, _) ->
-    c
+      acc >>= fun (created, updated, last) ->
+      let to_ptime task = Irmin.Task.date task |> Int64.to_float |> Ptime.of_float_s in
+      Store.Repo.task_of_commit_id repo commit_id >>= fun t ->
+      Printf.printf "dealing with commit from %s\n%!" (match to_ptime t with Some t -> Ptime.to_rfc3339 t | None -> assert false) ;
+      Store.read (store ()) key >|= fun data ->
+      match data, last with
+      | None, None -> Printf.printf  "both none\n%!" ; (created, updated, last)
+      | None, Some _ -> Printf.printf  "shouldn't happen (deleted?)\n%!" ;  (created, updated, last)
+      | Some x, Some y when x = y -> Printf.printf "content was equal\n%!" ; (created, updated, last)
+      | Some _, None -> Printf.printf "read sth without data\n%!" ; (commit_id, commit_id, data)
+      | Some _, Some _ -> Printf.printf "read sth newer\n%!" ; (created, commit_id, data)
+    in
+    Topological.fold aux history (Lwt.return (commit, commit, None))
 
   let date_updated_created key =
     new_task () >>= fun t  ->
     repo () >>= fun repo ->
     Store.head_exn (t "Finding head") >>= fun head ->
-    last_updated_commit_id head key >>= fun updated_commit_id ->
-    created_commit_id head key >>= fun created_commit_id ->
+    created_updated_ids head key >>= fun (created_commit_id, updated_commit_id, _) ->
     let to_ptime task = Irmin.Task.date task |> Int64.to_float |> Ptime.of_float_s in
     Store.Repo.task_of_commit_id repo updated_commit_id >>= fun updated ->
     Store.Repo.task_of_commit_id repo created_commit_id >>= fun created ->
     match to_ptime updated, to_ptime created with
-    | Some a, Some b -> Lwt.return (a, b)
+    | Some a, Some b ->
+      Printf.printf "key %s\n created %s\n updated %s\n%!" (String.concat "/" key) (Ptime.to_rfc3339 b) (Ptime.to_rfc3339 a) ;
+      Lwt.return (a, b)
     | _ -> raise (Invalid_argument "date_updated_last")
 
   let fill_cache article_map =
