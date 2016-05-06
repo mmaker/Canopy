@@ -64,7 +64,7 @@ let updated = function
 let tags content_map =
   let module S = Set.Make(String) in
   let s = KeyMap.fold (
-      fun k v s -> match v with
+      fun _k v s -> match v with
         | Markdown m ->
           let s' = S.of_list m.Canopy_article.tags in
           S.union s s')

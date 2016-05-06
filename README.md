@@ -110,7 +110,7 @@ Each directories will contains more pages, but that will be classified under a c
 For example, a `posts/hello-word.md` file will be a new blog post under the `Posts` category.
 You can use it to emulate some sort of tag, like for example having an `OCaml` directory regrouping all you writing in everyone's favorite language. :-)
 
-The file syntax is just plain markdown, everything should be supported out-the-box (depending on the `ocaml-cow` markdown implementation), with a little bit of extra informations absolutely needed at the top of each files.
+The file syntax is just plain markdown, everything should be supported out-the-box (depending on the [`ocaml-omd`](https://github.com/ocaml/omd) markdown implementation), with a little bit of extra informations absolutely needed at the top of each files.
 
 ```
 ---
