@@ -114,7 +114,7 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     let open Canopy_content in
     let key_to_path key = List.fold_left (fun a b -> a ^ "/" ^ b) "" key in
     let fold_fn key value acc =
-      value >>= fun content ->
+      value () >>= fun content ->
       date_updated_created key >>= fun (updated, created) ->
       let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
       match of_string ~uri ~content ~created ~updated with
