@@ -1,7 +1,7 @@
 PKG lwt
 PKG irmin
 PKG mirage
-PKG cow
+PKG omd
 PKG calendar
 PKG decompress
 PKG irmin.mirage
