@@ -80,7 +80,7 @@ let remote_k =
 (* Dependencies *)
 
 let libraries = [
-    "cow";
+    "omd" ;
     "ptime";
     "decompress";
     "irmin.mirage";
@@ -92,7 +92,7 @@ let libraries = [
   ]
 
 let packages = [
-    "cow";
+    "omd" ;
     "tyxml";
     "ptime";
     "decompress";

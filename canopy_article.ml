@@ -15,7 +15,7 @@ type t = {
 let of_string meta uri created updated content =
   try
     let split_tags = Re_str.split (Re_str.regexp ",") in
-    let content = Cow.Markdown.of_string content |> Cow.Html.to_string in
+    let content = Omd.of_string content |> Omd.to_html in
     let author = List.assoc "author" meta in
     let title = List.assoc "title" meta in
     let tags = assoc_opt "tags" meta |> map_opt split_tags [] |> List.map String.trim in
