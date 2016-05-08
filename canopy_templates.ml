@@ -2,18 +2,6 @@ open Canopy_config
 open Canopy_utils
 open Html5.M
 
-module StringPrinter = struct
-    type out = string
-    type m = string
-
-    let empty = ""
-    let concat = (^)
-    let put a = a
-    let make a = a
-end
-
-module StringHtml = Html5.Make_printer(StringPrinter)
-
 let empty =
   div []
 
@@ -77,7 +65,9 @@ let main ~config ~content ~title ~keys =
          ]
       )
   in
-  StringHtml.print page
+  let buf = Buffer.create 500 in
+  Html5.P.print (Buffer.add_string buf) page ;
+  Buffer.contents buf
 
 let listing entries =
   [div ~a:[a_class ["flex-container"]] [
