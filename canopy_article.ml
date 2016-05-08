@@ -55,7 +55,7 @@ let to_tyxml_listing_entry article =
     pcdata "("; time [pcdata created]; pcdata ")";
     br ();
   ] in
-  a ~a:[a_href article.uri; a_class ["list-group-item"]] (content ++ abstract)
+  a ~a:[a_href ("/" ^ article.uri); a_class ["list-group-item"]] (content ++ abstract)
 
 let to_tyxml_tags tags =
   let format_tag tag =
