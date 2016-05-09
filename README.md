@@ -37,10 +37,8 @@ You'll also need `npm`, `less-css` and `browserify` if you want to compile and r
 Checkout Canopy repository, then go inside:
 
 ```sh
-# You need syndic using ptime, thus first install ptime
-opam install ptime
-# Then pin syndic to the branch where ptime is used
-opam pin add syndic https://github.com/Cumulus/syndic.git#ptime
+# You need to pin syndic to the master branch
+opam pin add syndic https://github.com/Cumulus/syndic.git
 # Configure the mirage application, compile assets
 mirage configure --unix
 # Compile Canopy
