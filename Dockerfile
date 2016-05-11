@@ -14,11 +14,11 @@ WORKDIR /src
 ADD tls /src/tls
 RUN sudo chown -R opam:opam /src; sudo chmod -R 700 /src
 ENV TMP /tmp
-RUN opam config exec -- mirage configure --unix --no-assets-compilation
+RUN opam config exec -- mirage configure --no-assets-compilation
 COPY . /src
 ADD assets /src/assets
 RUN sudo chown -R opam:opam /src; sudo chmod -R 700 /src
-RUN opam config exec -- mirage configure --unix --no-opam --no-depext
+RUN opam config exec -- mirage configure --no-opam --no-depext
 RUN opam config exec -- make
 EXPOSE 8080
 ENTRYPOINT ["opam", "config", "exec", "--", "./mir-canopy"]
