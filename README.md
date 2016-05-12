@@ -27,7 +27,7 @@ service.  Canopy will then respond to HTTP requests with a [moved
 permanently](https://tools.ietf.org/html/rfc2616#section-10.3.2) redirection to
 the HTTPS URL.  Also, the HTTPS service includes a [strict transport
 security](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security) HTTP
-header (containing `max-age=31536000; includeSubDomains`).
+header (containing `max-age=31536000`).
 
 ### Compiling and running Canopy
 
