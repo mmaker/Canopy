@@ -37,8 +37,6 @@ You'll also need `npm`, `less-css` and `browserify` if you want to compile and r
 Checkout Canopy repository, then go inside:
 
 ```sh
-# You need to pin syndic to the master branch
-opam pin add syndic https://github.com/Cumulus/syndic.git
 # Configure the mirage application, compile assets
 mirage configure --unix
 # Compile Canopy
