@@ -7,7 +7,6 @@ RUN sudo npm install -g less browserify
 RUN cd /home/opam/opam-repository; git pull && opam update; cd -
 RUN opam upgrade
 RUN opam update
-RUN opam pin add syndic https://github.com/Cumulus/Syndic.git
 RUN sudo ln -s `which nodejs` /usr/bin/node
 ADD package.json README.md config.ml /src/
 WORKDIR /src

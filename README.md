@@ -27,7 +27,7 @@ service.  Canopy will then respond to HTTP requests with a [moved
 permanently](https://tools.ietf.org/html/rfc2616#section-10.3.2) redirection to
 the HTTPS URL.  Also, the HTTPS service includes a [strict transport
 security](https://en.wikipedia.org/wiki/HTTP_Strict_Transport_Security) HTTP
-header (containing `max-age=31536000; includeSubDomains`).
+header (containing `max-age=31536000`).
 
 ### Compiling and running Canopy
 
@@ -37,8 +37,6 @@ You'll also need `npm`, `less-css` and `browserify` if you want to compile and r
 Checkout Canopy repository, then go inside:
 
 ```sh
-# You need to pin syndic to the master branch
-opam pin add syndic https://github.com/Cumulus/syndic.git
 # Configure the mirage application, compile assets
 mirage configure --unix
 # Compile Canopy
