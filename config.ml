@@ -30,7 +30,7 @@ let config_shell = impl @@ object
            run "browserify assets/js/main.js -o disk/static/js/canopy.js" >>= fun () ->
            run "lessc assets/less/style.less disk/static/css/style.css --source-map-map-inline --strict-imports" >>= fun () ->
            run "cp node_modules/bootstrap/dist/css/bootstrap.min.css disk/static/css/bootstrap.min.css" >>= fun () ->
-           run "cp node_modules/highlight.js/styles/solarized-light.css disk/static/css/highlight.css" >>= fun () ->
+           run "cp node_modules/highlight.js/styles/grayscale.css disk/static/css/highlight.css" >>= fun () ->
            Printf.printf "Compressing compiled assets to assets/assets_generated.tar.gz…\n";
            run "tar -cf assets/assets_generated.tar.gz disk/")
         else
