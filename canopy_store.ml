@@ -45,87 +45,50 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
          let msg = Printf.sprintf "Fail pull %s" (Printexc.to_string e) in
          Lwt.return (C.log console msg))
 
-  let created_commit_id commit keys =
+  let created_updated_ids commit key =
     repo () >>= fun repo ->
     Store.master task repo >>= fun t  ->
     Store.history (t "Reading history") >>= fun history ->
-    let rec aux last_commit visited to_visit =
-      match to_visit with
-      | [] -> Lwt.return last_commit
-      | commit::to_visit ->
-   Store.of_commit_id (Irmin.Task.none) commit repo >>= fun store ->
-   Store.read (store ()) keys >>= fun readed_file ->
-   let visited = commit::visited in
-   match readed_file with
-   | Some _ ->
-      let to_visit =
-        ( match Store.History.pred history commit with
-    | [] -> to_visit
-    | pred::pred2::[] ->
-       let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
-       let to_visit = if ((List.mem pred2 visited) = false) then pred2::to_visit else to_visit in
-       to_visit
-    | pred::[] ->
-       let to_visit = if ((List.mem pred visited) = false) then pred::to_visit else to_visit in
-       to_visit
-    | q -> print_endline "weird"; List.append (List.rev q) to_visit)
-      in aux commit visited to_visit
-   | None -> Lwt.return last_commit in
-    aux commit [] [commit]
-
-  let last_updated_commit_id commit key =
-    repo () >>= fun repo ->
-    new_task () >>= fun t  ->
-    Store.read_exn (t "Reading file") key >>= fun current_file ->
     let aux commit_id acc =
-      acc >>= fun (acc, matched) ->
       Store.of_commit_id (Irmin.Task.none) commit_id repo >>= fun store ->
-      Store.read (store ()) key >>= fun readed_file ->
-      match readed_file with
-      | Some readed_file ->
-        let matching = current_file = readed_file in
-        let res =
-          if current_file = readed_file
-          then if matched then acc else commit_id
-          else commit_id in
-        Lwt.return (res, matching)
-      | None -> Lwt.return (commit_id, true) in
-    Store.history (t "Reading history") >>= fun history ->
-    Topological.fold aux history (Lwt.return (commit, false))
-    >>= fun (c, _) -> Lwt.return c
+      acc >>= fun (created, updated, last) ->
+      Store.read (store ()) key >|= fun data ->
+      match data, last with
+      | None, None -> (created, updated, last)
+      | None, Some _ -> (created, updated, last)
+      | Some x, Some y when x = y -> (created, updated, last)
+      | Some _, None -> (commit_id, commit_id, data)
+      | Some _, Some _ -> (created, commit_id, data)
+    in
+    Topological.fold aux history (Lwt.return (commit, commit, None))
 
   let date_updated_created key =
     new_task () >>= fun t  ->
     repo () >>= fun repo ->
     Store.head_exn (t "Finding head") >>= fun head ->
-    last_updated_commit_id head key >>= fun updated_commit_id ->
-    created_commit_id head key >>= fun created_commit_id ->
-    Store.Repo.task_of_commit_id repo updated_commit_id >>= fun task ->
-    let date = Irmin.Task.date task |> Int64.to_float in
-    let updated_date = Ptime.of_float_s date in
-    Store.Repo.task_of_commit_id repo created_commit_id >>= fun task ->
-    let date = Irmin.Task.date task |> Int64.to_float in
-    let created_date = Ptime.of_float_s date in
-    match updated_date, created_date with
+    created_updated_ids head key >>= fun (created_commit_id, updated_commit_id, _) ->
+    let to_ptime task = Irmin.Task.date task |> Int64.to_float |> Ptime.of_float_s in
+    Store.Repo.task_of_commit_id repo updated_commit_id >>= fun updated ->
+    Store.Repo.task_of_commit_id repo created_commit_id >>= fun created ->
+    match to_ptime updated, to_ptime created with
     | Some a, Some b -> Lwt.return (a, b)
     | _ -> raise (Invalid_argument "date_updated_last")
 
   let fill_cache article_map =
     let open Canopy_content in
-    let key_to_path key = List.fold_left (fun a b -> a ^ "/" ^ b) "" key in
     let fold_fn key value acc =
-      value >>= fun content ->
+      value () >>= fun content ->
       date_updated_created key >>= fun (updated, created) ->
-      let uri = List.fold_left (fun s a -> s ^ "/" ^ a) "" key in
+      let uri = String.concat "/" key in
       match of_string ~uri ~content ~created ~updated with
-      | Ok article -> (
-          article_map := KeyMap.add key article !article_map;
-          Lwt.return acc)
+      | Ok article ->
+        article_map := KeyMap.add key article !article_map;
+        Lwt.return acc
       | Error error ->
-        let error_msg = Printf.sprintf "Error while parsing %s: %s" (key_to_path key) error in
+        let error_msg = Printf.sprintf "Error while parsing %s: %s" uri error in
         Lwt.return (error_msg::acc)
       | Unknown ->
-        let error_msg = Printf.sprintf "%s : Unknown content type" (key_to_path key) in
+        let error_msg = Printf.sprintf "%s : Unknown content type" uri in
         Lwt.return (error_msg::acc)
     in
     new_task () >>= fun t ->
