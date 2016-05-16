@@ -37,7 +37,7 @@ let config_shell = impl @@ object
           (Printf.printf "npm, browserify and lessc not found… decompressing from assets/assets_generated.tar.gz\n";
            run "tar -xf assets/assets_generated.tar.gz")
 
-    method clean i = Functoria_app.Cmd.run "rm -r node_modules disk"
+    method clean i = Functoria_app.Cmd.run "rm -rf node_modules disk"
 
     method module_name = "Functoria_runtime"
     method name = "shell_config"
