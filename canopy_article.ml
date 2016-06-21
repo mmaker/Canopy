@@ -77,17 +77,19 @@ let to_atom ({ title; author; abstract; uri; created; updated; tags; content; } 
     | Some x -> Some (text x)
     | None -> None
   in
+  let root = Canopy_config.((config ()).root) 
+  in
   let categories =
     List.map
-      (fun x -> Syndic.Atom.category ~scheme:(Uri.of_string ("/tags/" ^ x)) x)
+      (fun x -> Syndic.Atom.category ~scheme:(Uri.of_string (root ^ "/tags/" ^ x)) x)
       tags
   in
-  let generate_id ?(root = "") { created; uri; _ } =
-    let d, m, y = Ptime.to_date created in
-    let relatif = Uri.path @@ Uri.of_string uri in
-    let ts = Ptime.Span.to_int_s @@ Ptime.to_span created in
-    Printf.sprintf "tag:%s,%d-%d-%d:%s/%a" root d m y relatif
-      (fun () -> function Some a -> string_of_int a | None -> "") ts
+  let generate_id { created; uri; _ } =
+    let open Uuidm in
+    let stamp = Ptime.to_rfc3339 created in
+    let uuid = Canopy_config.((config ()).uuid) in
+    let entry_id = to_string (v5 (create (`V5 (ns_dns, stamp))) uuid) in
+    Printf.sprintf "urn:uuid:%s" entry_id
     |> Uri.of_string
   in
   Syndic.Atom.entry
