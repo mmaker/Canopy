@@ -1,6 +1,6 @@
 open Canopy_config
 open Canopy_utils
-open Html5.M
+open Tyxml.Html
 
 let empty =
   div []
@@ -29,7 +29,7 @@ let main ~config ~content ~title ~keys =
   let page =
     html
       (head
-         (Html5.M.title (pcdata title))
+         (Tyxml.Html.title (pcdata title))
          ([
            meta ~a:[a_charset "UTF-8"] ();
            link ~rel:[`Stylesheet] ~href:"/static/css/bootstrap.min.css" ();
@@ -66,7 +66,8 @@ let main ~config ~content ~title ~keys =
       )
   in
   let buf = Buffer.create 500 in
-  Html5.P.print (Buffer.add_string buf) page ;
+  let fmt = Format.formatter_of_buffer buf in
+  pp () fmt page ;
   Buffer.contents buf
 
 let listing entries =
