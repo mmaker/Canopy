@@ -1,5 +1,5 @@
 open Canopy_utils
-open Html5.M
+open Tyxml.Html
 
 type t = {
   title : string;
@@ -39,7 +39,7 @@ let to_tyxml article =
       tags;
       span ~a:[a_class ["date"]] [pcdata updated];
       br ();
-      Html5.M.article [Unsafe.data article.content]
+      Tyxml.Html.article [Unsafe.data article.content]
     ]]
 
 let to_tyxml_listing_entry article =
