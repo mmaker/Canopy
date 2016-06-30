@@ -5,6 +5,8 @@ type t = {
   port : int;
   push_hook_path: string;
   tls_port : int option;
+  uuid : string;
+  root : string;
 }
 
 let config () = {
@@ -14,4 +16,6 @@ let config () = {
   port = Key_gen.port ();
   push_hook_path = Key_gen.push_hook ();
   tls_port = Key_gen.tls_port ();
+  uuid = Key_gen.uuid ();
+  root = Key_gen.root ();
 }

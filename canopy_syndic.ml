@@ -13,10 +13,10 @@ let atom config last_commit_date content_cache =
     let ns_prefix _ = Some "" in
     last_commit_date () >|= fun updated ->
     Syndic.Atom.feed
-      ~id:(Uri.of_string config.blog_name)
+      ~id:(Uri.of_string ("urn:uuid:" ^ config.uuid))
       ~title:(Syndic.Atom.Text config.blog_name : Syndic.Atom.text_construct)
       ~updated
-      ~links:[Syndic.Atom.link ~rel:Syndic.Atom.Self (Uri.of_string "/atom")]
+      ~links:[Syndic.Atom.link ~rel:Syndic.Atom.Self (Uri.of_string (config.root ^ "/atom"))]
       entries
     |> fun feed -> Syndic.Atom.to_xml feed
     |> fun x -> Syndic.XML.to_string ~ns_prefix x

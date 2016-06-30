@@ -41,8 +41,10 @@ Checkout Canopy repository, then go inside:
 mirage configure --unix
 # Compile Canopy
 make
+# Generate a UUID for the Atom feed (only do this the first time)
+uuidtrip -r > myuuid.txt
 # Run it
-./mir-canopy -r https://github.com/Engil/Canopy-documentation.git -i Welcome -p 8080
+./mir-canopy -r https://github.com/Engil/Canopy-documentation.git -i Welcome -p 8080 -u "`cat myuuid.txt`"
 ```
 
 A server will be launched using the specified URL as the git remote, `Index` as the default page rendered on the blog (it must exist within the repository) and `8080` is the listening port.

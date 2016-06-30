@@ -42,7 +42,7 @@ let config_shell = impl @@ object
     method module_name = "Functoria_runtime"
     method name = "shell_config"
     method ty = shellconfig
-end
+  end
 
 (* disk device *)
 
@@ -52,6 +52,14 @@ let disk =
   fat_ro "./disk"
 
 (* Command-line options *)
+
+let root_k =
+  let doc = Key.Arg.info ~doc:"Blog URL" ["root"] in
+  Key.(create "root" Arg.(opt string "http://localhost" doc))
+
+let uuid_k =
+  let doc = Key.Arg.info ~doc:"UUID used as atom feed id." ["u"; "uuid"] in
+  Key.(create "uuid" Arg.(required string doc))
 
 let index_k =
   let doc = Key.Arg.info ~doc:"Index file name in remote." ["i"; "index"] in
@@ -89,6 +97,7 @@ let libraries = [
     "tls.mirage";
     "tyxml";
     "syndic";
+    "uuidm";
   ]
 
 let packages = [
@@ -107,6 +116,7 @@ let packages = [
     "cohttp";
     "syndic";
     "magic-mime";
+    "uuidm";
   ]
 
 
@@ -126,6 +136,8 @@ let () =
       abstract remote_k;
       abstract tls_port_k;
       abstract no_assets_k;
+      abstract uuid_k;
+      abstract root_k;
     ])
   in
   register "canopy" [
