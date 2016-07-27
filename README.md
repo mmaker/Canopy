@@ -32,7 +32,7 @@ header (containing `max-age=31536000`).
 ### Compiling and running Canopy
 
 You will need at least `OCaml 4.02.3`, `opam 1.2` and `mirage 2.7.0` before starting. To setup a mirage environment, please refer to the mirage website.
-You'll also need `npm`, `less-css` and `browserify` if you want to compile and retrieve everything related to the blog-styling. The `mirage configure` step takes care of fetching and recompiling all assets. If none of the mentionned programs were to be found, the configure step will use the tarball found in the `assets` directory, containing already compiled assets.
+You'll also need `npm`, `less-css` and `browserify` if you want to compile and retrieve everything related to the blog-styling. The `mirage configure` step takes care of fetching and recompiling all assets. If none of the mentioned programs were to be found, the configure step will use the tarball found in the `assets` directory, containing already compiled assets.
 
 Checkout Canopy repository, then go inside:
 
