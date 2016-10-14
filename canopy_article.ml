@@ -15,7 +15,7 @@ type t = {
 let of_string meta uri created updated content =
   try
     let split_tags = Re_str.split (Re_str.regexp ",") in
-    let content = Omd.of_string content |> Omd.to_html in
+    let content = Omd.to_html (Omd.of_string content) in
     let author = List.assoc "author" meta in
     let title = List.assoc "title" meta in
     let tags = assoc_opt "tags" meta |> map_opt split_tags [] |> List.map String.trim in
@@ -84,7 +84,7 @@ let to_atom ({ title; author; abstract; uri; created; updated; tags; content; } 
       (fun x -> Syndic.Atom.category ~scheme:(Uri.of_string (root ^ "/tags/" ^ x)) x)
       tags
   in
-  let generate_id { created; uri; _ } =
+  let generate_id { created; _ } =
     let open Uuidm in
     let stamp = Ptime.to_rfc3339 created in
     let uuid = Canopy_config.((config ()).uuid) in

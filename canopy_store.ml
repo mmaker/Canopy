@@ -75,19 +75,19 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     | _ -> raise (Invalid_argument "date_updated_last")
 
   let fill_cache article_map =
-    let open Canopy_content in
+    let module C = Canopy_content in
     let fold_fn key value acc =
       value () >>= fun content ->
       date_updated_created key >>= fun (updated, created) ->
       let uri = String.concat "/" key in
-      match of_string ~uri ~content ~created ~updated with
-      | Ok article ->
+      match C.of_string ~uri ~content ~created ~updated with
+      | C.Ok article ->
         article_map := KeyMap.add key article !article_map;
         Lwt.return acc
-      | Error error ->
+      | C.Error error ->
         let error_msg = Printf.sprintf "Error while parsing %s: %s" uri error in
         Lwt.return (error_msg::acc)
-      | Unknown ->
+      | C.Unknown ->
         let error_msg = Printf.sprintf "%s : Unknown content type" uri in
         Lwt.return (error_msg::acc)
     in
