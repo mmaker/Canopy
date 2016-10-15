@@ -15,7 +15,12 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
   let task s = Irmin.Task.create ~date:0L ~owner:"Server" s
   let config = Canopy_config.config ()
   let repo _ = Store.Repo.create store_config
-  let new_task _ = repo () >>= Store.master task
+
+  let new_task _ =
+    match config.remote_branch with
+    | None -> repo () >>= Store.master task
+    | Some branch -> repo () >>= Store.of_branch_id task branch
+
   let upstream = Irmin.remote_uri config.remote_uri
 
   let get_subkeys key =
