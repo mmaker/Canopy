@@ -66,7 +66,7 @@ let index_k =
   Key.(create "index" Arg.(opt string "Index" doc))
 
 let tls_port_k =
-  let doc = Key.Arg.info ~doc:"Enable TLS (using keys in `tls/`) on given port." ["t"; "tls"] in
+  let doc = Key.Arg.info ~doc:"Enable TLS (using keys in `tls/`) on given port." ["tls"] in
   Key.(create "tls_port" Arg.(opt (some int) None doc))
 
 let name_k =
