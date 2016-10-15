@@ -22,7 +22,7 @@ certificate chain (starting with the server certificate, then the intermediate
 CAs, no need to include the root CA) into `tls/server.pem` before running
 `mirage configure` (which will embed them as OCaml code into the binary).
 
-You can configure Canopy with `--tls=<port>` (or `-t <port>`) to run it as HTTPS
+You can configure Canopy with `--tls=<port>` to run it as HTTPS
 service.  Canopy will then respond to HTTP requests with a [moved
 permanently](https://tools.ietf.org/html/rfc2616#section-10.3.2) redirection to
 the HTTPS URL.  Also, the HTTPS service includes a [strict transport
