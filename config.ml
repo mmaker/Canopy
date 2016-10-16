@@ -82,7 +82,10 @@ let push_hook_k =
   Key.(create "push_hook" Arg.(opt string "push" doc))
 
 let remote_k =
-  let doc = Key.Arg.info ~doc:"Remote repository to fetch content." ["r"; "remote"] in
+  let doc = Key.Arg.info ~doc:"Remote repository to fetch content.\
+                             \ Use suffix #foo to specify a branch 'foo':\
+                             \ https://github.com/user/blog.git#content"
+      ["r"; "remote"] in
   Key.(create "remote" Arg.(opt string "https://github.com/Engil/__blog.git" doc))
 
 (* Dependencies *)
