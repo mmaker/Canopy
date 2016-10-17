@@ -51,8 +51,8 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
          Lwt.return (C.log console msg))
 
   let created_updated_ids commit key =
+    new_task () >>= fun t ->
     repo () >>= fun repo ->
-    Store.master task repo >>= fun t  ->
     Store.history (t "Reading history") >>= fun history ->
     let aux commit_id acc =
       Store.of_commit_id (Irmin.Task.none) commit_id repo >>= fun store ->
