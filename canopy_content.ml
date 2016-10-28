@@ -17,7 +17,7 @@ let meta_assoc str =
       let value = Re_str.matched_group 2 meta in
       key, value)
 
-let of_string ~uri ~created ~updated ~content =
+let of_string ~base_uuid ~uri ~created ~updated ~content =
   let splitted_content = Re_str.bounded_split (Re_str.regexp "---") content 2 in
   match splitted_content with
   | [raw_meta;raw_content] ->
@@ -28,7 +28,7 @@ let of_string ~uri ~created ~updated ~content =
           match assoc_opt "content" meta with
           | Some "markdown"
           | None ->
-            Canopy_article.of_string meta uri created updated raw_content
+            Canopy_article.of_string base_uuid meta uri created updated raw_content
             |> map_opt (fun article -> Ok (Markdown article)) (Error "Error while parsing article")
           | Some _ -> Unknown
         end

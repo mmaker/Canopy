@@ -3,7 +3,7 @@ open Lwt.Infix
 open Canopy_utils
 open Canopy_config
 
-let atom last_commit_date content_cache =
+let atom uuid last_commit_date content_cache =
   let cache = ref None in
   let update_atom () =
     let l = KeyMap.fold_articles (fun _ x acc -> x :: acc) !content_cache []
@@ -13,7 +13,7 @@ let atom last_commit_date content_cache =
     let ns_prefix _ = Some "" in
     last_commit_date () >|= fun updated ->
     Syndic.Atom.feed
-      ~id:(Uri.of_string ("urn:uuid:" ^ uuid !content_cache))
+      ~id:(Uri.of_string ("urn:uuid:" ^ uuid))
       ~title:(Syndic.Atom.Text (blog_name !content_cache): Syndic.Atom.text_construct)
       ~updated
       ~links:[Syndic.Atom.link ~rel:Syndic.Atom.Self (Uri.of_string (root !content_cache ^ "/atom"))]

@@ -22,15 +22,15 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
 
   let upstream = Irmin.remote_uri (remote_uri ())
 
-  let good_key = function
-    | x::_ when x = "static" -> false
-    | x::_ when String.length x > 0 && String.get x 0 = '.' -> false
-    | _ -> true
+  let key_type = function
+    | x::_ when x = "static" -> `Static
+    | x::_ when x = ".config" -> `Config
+    | _ -> `Article
 
   let get_subkeys key =
     new_task () >>= fun t ->
     Store.list (t "Reading posts") key >|= fun keys ->
-    List.filter good_key keys
+    List.filter (fun k -> match key_type k with `Article -> true | _ -> false) keys
 
   let get_key key =
     new_task () >>= fun t ->
@@ -43,6 +43,11 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
       Lwt_mutex.with_lock mut
                  (fun _ -> !acc >>= fun acc' -> (acc := (fn k v acc')) |> Lwt.return))
     >>= fun _ -> !acc
+
+  let base_uuid () =
+    get_key [".config" ; "uuid"] >|= function
+    | None -> invalid_arg ".config/uuid is required in the remote git repository"
+    | Some n -> n
 
   let pull console =
     new_task () >>= fun t ->
@@ -84,30 +89,21 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     | Some a, Some b -> Lwt.return (a, b)
     | _ -> raise (Invalid_argument "date_updated_last")
 
-  let fill_cache cache =
+  let fill_cache base_uuid cache =
     let module C = Canopy_content in
     let fold_fn key value acc =
       value () >>= fun content ->
       date_updated_created key >>= fun (updated, created) ->
-      if not (good_key key) then
-        match key with
-        | "static"::_ ->
-          (cache := KeyMap.add key (`Raw content) !cache;
-           Lwt.return acc)
-        | ".config"::["uuid"] ->
-          (try
-             let _ = uuid !cache in Lwt.return acc
-           with (Required_config _) ->
-              (cache := KeyMap.add key (`Config content) !cache;
-               Lwt.return acc))
-        | ".config"::_ ->
-          (cache := KeyMap.add key (`Config content) !cache;
-            Lwt.return acc)
-        | _ ->
-          Lwt.return acc
-      else
+      match key_type key with
+      | `Static ->
+        (cache := KeyMap.add key (`Raw content) !cache;
+         Lwt.return acc)
+      | `Config ->
+        (cache := KeyMap.add key (`Config content) !cache;
+         Lwt.return acc)
+      | `Article ->
         let uri = String.concat "/" key in
-        match C.of_string ~uri ~content ~created ~updated with
+        match C.of_string ~base_uuid ~uri ~content ~created ~updated with
         | C.Ok article ->
           cache := KeyMap.add key (`Article article) !cache;
           Lwt.return acc

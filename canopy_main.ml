@@ -42,9 +42,10 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
     let open Canopy_utils in
     let cache = ref (KeyMap.empty) in
     Store.pull console >>= fun () ->
-    Store.fill_cache cache >>= fun l ->
+    Store.base_uuid () >>= fun uuid ->
+    Store.fill_cache uuid cache >>= fun l ->
     let update_atom, atom =
-      Canopy_syndic.atom Store.last_commit_date cache
+      Canopy_syndic.atom uuid Store.last_commit_date cache
     in
     let store_ops = {
       Canopy_dispatch.subkeys = Store.get_subkeys ;
@@ -52,7 +53,7 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
       update =
         (fun () ->
            Store.pull console >>= fun () ->
-           Store.fill_cache cache >>= fun res ->
+           Store.fill_cache uuid cache >>= fun res ->
            update_atom () >|= fun () ->
            res);
       last_commit = Store.last_commit_date ;
