@@ -62,7 +62,7 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
     let disp hdr =
       `Dispatch (hdr, store_ops, atom, cache, started)
     in
-    (match Canopy_config.tls_port !cache with
+    (match Canopy_config.tls_port () with
      | Some tls_port ->
        let redir uri =
          let https = Uri.with_scheme uri (Some "https") in
@@ -72,8 +72,10 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
          in
          Uri.with_port https port
        in
-       let http = HTTP.listen (D.create console (`Redirect redir)) in
-       S.listen_tcpv4 stack ~port:(Canopy_config.port !cache) http ;
+       let http = HTTP.listen (D.create console (`Redirect redir))
+       and port = Canopy_config.port ()
+       in
+       S.listen_tcpv4 stack ~port http ;
        C.log_s console
          (let redirect =
             let req = Uri.of_string "http://127.0.0.1" in
@@ -81,7 +83,7 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
             Uri.to_string (redir req)
           in
           Printf.sprintf "HTTP server listening on port %d (redirecting to %s)"
-            (Canopy_config.port !cache) redirect
+            port redirect
          ) >>= fun () ->
        tls_init keys >>= fun tls_conf ->
        let hdr = Cohttp.Header.init_with
@@ -94,10 +96,12 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
          (Printf.sprintf "HTTPS server listening on port %d" tls_port)
      | None ->
        let hdr = Cohttp.Header.init () in
-       let http = HTTP.listen (D.create console (disp hdr)) in
-       S.listen_tcpv4 stack ~port:(Canopy_config.port !cache) http ;
+       let http = HTTP.listen (D.create console (disp hdr))
+       and port = Canopy_config.port ()
+       in
+       S.listen_tcpv4 stack ~port http ;
        C.log_s console
-         (Printf.sprintf "HTTP server listening on port %d" (Canopy_config.port !cache))
+         (Printf.sprintf "HTTP server listening on port %d" port)
     ) >>= fun () ->
     S.listen stack
 end

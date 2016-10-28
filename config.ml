@@ -13,6 +13,14 @@ let remote_k =
       ["r"; "remote"] in
   Key.(create "remote" Arg.(opt string "https://github.com/Engil/__blog.git" doc))
 
+let port_k =
+  let doc = Key.Arg.info ~doc:"Socket port." ["p"; "port"] in
+  Key.(create "port" Arg.(opt int 8080 doc))
+
+let tls_port_k =
+  let doc = Key.Arg.info ~doc:"Enable TLS (using keys in `tls/`) on given port." ["tls"] in
+  Key.(create "tls_port" Arg.(opt (some int) None doc))
+
 (* Dependencies *)
 
 let libraries = [
@@ -59,6 +67,8 @@ let () =
   let keys = Key.([
       abstract push_hook_k;
       abstract remote_k;
+      abstract port_k;
+      abstract tls_port_k;
     ])
   in
   register "canopy" [

@@ -12,6 +12,9 @@ let decompose_git_url url =
 
 let remote_uri () = fst (decompose_git_url (Key_gen.remote ()))
 let remote_branch () = snd (decompose_git_url (Key_gen.remote ()))
+let port () = Key_gen.port ()
+let tls_port () = Key_gen.tls_port ()
+let push_hook_path () = Key_gen.push_hook ()
 
 let index_page cache =
   match KeyMap.find_config_opt cache [".config";"index_page"] with
@@ -32,15 +35,3 @@ let root cache =
   match KeyMap.find_config_opt cache [".config";"root"] with
     None -> "http://localhost"
   | Some r -> r
-
-let port cache =
-  match KeyMap.find_config_opt cache [".config";"port"] with
-    None -> 8080
-  | Some s -> String.trim s |> int_of_string
-
-let tls_port cache =
-  match KeyMap.find_config_opt cache [".config";"tls_port"] with
-    None -> None
-  | Some s -> Some (String.trim s |> int_of_string)
-        
-let push_hook_path () = Key_gen.push_hook ()
