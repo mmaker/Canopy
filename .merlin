@@ -13,6 +13,7 @@ PKG mirage-console
 PKG syndic
 PKG ptime
 PKG uuidm
+PKG logs
 
 S .
 B _build

@@ -34,6 +34,7 @@ let libraries = [
     "tyxml";
     "syndic";
     "uuidm";
+    "logs";
   ]
 
 let packages = [
@@ -53,6 +54,7 @@ let packages = [
     "syndic";
     "magic-mime";
     "uuidm";
+    "logs"
   ]
 
 
@@ -78,8 +80,7 @@ let () =
       ~keys
       ~packages
       "Canopy_main.Main"
-      (console @-> stackv4 @-> resolver @-> conduit @-> clock @-> kv_ro @-> job)
-    $ default_console
+      (stackv4 @-> resolver @-> conduit @-> clock @-> kv_ro @-> job)
     $ stack
     $ resolver_dns stack
     $ conduit_direct ~tls:true stack
