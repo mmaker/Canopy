@@ -47,7 +47,7 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
   let base_uuid () =
     get_key [".config" ; "uuid"] >|= function
     | None -> invalid_arg ".config/uuid is required in the remote git repository"
-    | Some n -> n
+    | Some n -> String.trim n
 
   let pull console =
     new_task () >>= fun t ->
@@ -99,7 +99,7 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
         (cache := KeyMap.add key (`Raw content) !cache;
          Lwt.return acc)
       | `Config ->
-        (cache := KeyMap.add key (`Config content) !cache;
+        (cache := KeyMap.add key (`Config (String.trim content)) !cache;
          Lwt.return acc)
       | `Article ->
         let uri = String.concat "/" key in
