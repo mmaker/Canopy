@@ -80,13 +80,9 @@ module Main (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (CLOCK: V
        and port = Canopy_config.port ()
        in
        S.listen_tcpv4 stack ~port http ;
-       Log.info (fun f ->
-           let redirect =
-             let req = Uri.of_string "http://127.0.0.1" in
-             (* TODO: use own hostname instead of 127.0.0.1 once we have that *)
-             Uri.to_string (redir req)
-           in
-           f "HTTP server listening on port %d (redirecting to %s)" port redirect) ;
+       Log.info (fun f -> f "HTTP server listening on port %d, \
+                             redirecting to https service on port %d"
+                    port tls_port) ;
        tls_init keys >|= fun tls_conf ->
        let hdr = Cohttp.Header.init_with
            "Strict-Transport-Security" "max-age=31536000" (* in seconds, roughly a year *)
