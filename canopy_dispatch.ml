@@ -109,10 +109,9 @@ module Make (S: Cohttp_lwt.Server)
     let callback = match dispatch with
       | `Redirect fn ->
         (fun _ request _ ->
-           let req = Cohttp.Request.uri request in
-           let uri = fn req in
-           Log.info (fun f -> f "redirecting to %s" (Uri.to_string uri)) ;
-           moved_permanently uri)
+           let redirect = fn (Cohttp.Request.uri request) in
+           Log.info (fun f -> f "redirecting to %s" (Uri.to_string redirect)) ;
+           moved_permanently redirect)
       | `Dispatch (headers, store, atom, content) ->
         (fun _ request _ ->
            let uri = Cohttp.Request.uri request in
