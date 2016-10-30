@@ -95,7 +95,7 @@ module Store (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = struct
       value () >>= fun content ->
       date_updated_created key >|= fun (updated, created) ->
       match key_type key with
-      | `Static -> KeyMap.add key (`Raw content) cache
+      | `Static -> KeyMap.add key (`Raw (content, updated)) cache
       | `Config -> KeyMap.add key (`Config (String.trim content)) cache
       | `Article ->
         let uri = String.concat "/" key in

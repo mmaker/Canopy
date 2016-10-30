@@ -39,10 +39,6 @@ module Main (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (CLOCK: V
     Tls.Config.server ~certificates:(`Single cert) ()
 
   let start stack resolver conduit _clock keys _ =
-    let started = match Ptime.of_float_s (CLOCK.time ()) with
-      | None -> invalid_arg ("Ptime.of_float_s")
-      | Some t -> t
-    in
     let module Context =
       ( struct
         let v _ = Lwt.return_some (resolver, conduit)
@@ -68,9 +64,7 @@ module Main (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (CLOCK: V
       last_commit = Store.last_commit_date ;
     } in
     update_atom () >>= fun () ->
-    let disp hdr =
-      `Dispatch (hdr, store_ops, atom, cache, started)
-    in
+    let disp hdr = `Dispatch (hdr, store_ops, atom, cache) in
     (match Canopy_config.tls_port () with
      | Some tls_port ->
        let redir uri =

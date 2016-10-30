@@ -17,7 +17,7 @@ module Make (S: Cohttp_lwt.Server)
     let headers = Cohttp.Header.init_with "location" (Uri.to_string uri) in
     S.respond ~headers ~status:`Moved_permanently ~body:`Empty ()
 
-  let rec dispatcher headers store atom cache uri etag updated =
+  let rec dispatcher headers store atom cache uri etag =
     let open Canopy_utils in
     let respond_not_found () =
       S.respond_string ~headers ~status:`Not_found ~body:"Not found" ()
@@ -39,7 +39,7 @@ module Make (S: Cohttp_lwt.Server)
     match Re_str.split (Re_str.regexp "/") (Uri.pct_decode uri) with
     | [] ->
       let index_page = Canopy_config.index_page !cache in
-      dispatcher headers store atom cache index_page etag updated
+      dispatcher headers store atom cache index_page etag
     | "atom" :: [] ->
       atom () >>= fun body ->
       store.last_commit () >>= fun updated ->
@@ -96,7 +96,7 @@ module Make (S: Cohttp_lwt.Server)
           let title, content = Canopy_content.to_tyxml article in
           let updated = Canopy_content.updated article in
           respond_html ~headers ~title ~content ~updated
-        | Some (`Raw body) ->
+        | Some (`Raw (body, updated)) ->
           let headers = static_headers headers uri updated in
           respond_if_modified ~headers ~body ~updated
       end
@@ -113,12 +113,12 @@ module Make (S: Cohttp_lwt.Server)
            let uri = fn req in
            Log.info (fun f -> f "redirecting to %s" (Uri.to_string uri)) ;
            moved_permanently uri)
-      | `Dispatch (headers, store, atom, content, time) ->
+      | `Dispatch (headers, store, atom, content) ->
         (fun _ request _ ->
            let uri = Cohttp.Request.uri request in
            let etag = Cohttp.Header.get Cohttp.Request.(request.headers) "if-none-match" in
            Log.info (fun f -> f "request %s" (Uri.to_string uri)) ;
-           dispatcher headers store atom content (Uri.path uri) etag time)
+           dispatcher headers store atom content (Uri.path uri) etag)
     in
     S.make ~callback ~conn_closed ()
 
