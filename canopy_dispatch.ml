@@ -7,8 +7,7 @@ type store_ops = {
   last_commit : unit -> Ptime.t Lwt.t ;
 }
 
-module Make (S: Cohttp_lwt.Server)
-= struct
+module Make (S: Cohttp_lwt.Server) = struct
 
   let src = Logs.Src.create "canopy-dispatch" ~doc:"Canopy dispatch logger"
   module Log = (val Logs.src_log src : Logs.LOG)
@@ -101,6 +100,22 @@ module Make (S: Cohttp_lwt.Server)
           respond_if_modified ~headers ~body ~updated
       end
 
+  (* maybe this should be provided elsewhere *)
+  let log request response =
+    let open Cohttp in
+    let sget k = match Header.get request.Request.headers k with
+      | None -> "-"
+      | Some x -> x
+    in
+    Log.info (fun f ->
+        f "\"%s %s %s\" %d \"%s\" \"%s\""
+          (Code.string_of_method request.Request.meth)
+          request.Request.resource
+          (Code.string_of_version request.Request.version)
+          (Code.code_of_status response.Response.status)
+          (sget "Referer")
+          (sget "User-Agent"))
+
   let create dispatch =
     let conn_closed (_, conn_id) =
       let cid = Cohttp.Connection.to_string conn_id in
@@ -110,16 +125,16 @@ module Make (S: Cohttp_lwt.Server)
       | `Redirect fn ->
         (fun _ request _ ->
            let redirect = fn (Cohttp.Request.uri request) in
-           Log.info (fun f -> f "redirecting to %s" (Uri.to_string redirect)) ;
-           moved_permanently redirect)
+           moved_permanently redirect >|= fun (res, body) ->
+           log request res ;
+           (res, body))
       | `Dispatch (headers, store, atom, content) ->
         (fun _ request _ ->
            let uri = Cohttp.Request.uri request in
            let etag = Cohttp.Header.get Cohttp.Request.(request.headers) "if-none-match" in
-           Log.info (fun f -> f "request %s" (Uri.to_string uri)) ;
-           dispatcher headers store atom content (Uri.path uri) etag)
+           dispatcher headers store atom content (Uri.path uri) etag >|= fun (res, body) ->
+           log request res ;
+           (res, body))
     in
     S.make ~callback ~conn_closed ()
-
-
 end
