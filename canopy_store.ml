@@ -1,9 +1,8 @@
 open Lwt.Infix
-open V1_LWT
 open Canopy_config
 open Canopy_utils
 
-module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = struct
+module Store (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = struct
 
   module Hash = Irmin.Hash.SHA1
   module Mirage_git_memory = Irmin_mirage.Irmin_git.Memory(CTX)(INFL)
@@ -11,21 +10,29 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
   module Sync = Irmin.Sync(Store)
   module Topological = Graph.Topological.Make(Store.History)
 
+  let src = Logs.Src.create "canopy-store" ~doc:"Canopy store logger"
+  module Log = (val Logs.src_log src : Logs.LOG)
+
   let store_config = Irmin_mem.config ()
   let task s = Irmin.Task.create ~date:0L ~owner:"Server" s
-  let config = Canopy_config.config ()
   let repo _ = Store.Repo.create store_config
 
   let new_task _ =
-    match config.remote_branch with
+    match remote_branch () with
     | None -> repo () >>= Store.master task
     | Some branch -> repo () >>= Store.of_branch_id task branch
 
-  let upstream = Irmin.remote_uri config.remote_uri
+  let upstream = Irmin.remote_uri (remote_uri ())
+
+  let key_type = function
+    | x::_ when x = "static" -> `Static
+    | x::_ when x = ".config" -> `Config
+    | _ -> `Article
 
   let get_subkeys key =
     new_task () >>= fun t ->
-    Store.list (t "Reading posts") key
+    Store.list (t "Reading posts") key >|= fun keys ->
+    List.filter (fun k -> match key_type k with `Article -> true | _ -> false) keys
 
   let get_key key =
     new_task () >>= fun t ->
@@ -39,16 +46,19 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
                  (fun _ -> !acc >>= fun acc' -> (acc := (fn k v acc')) |> Lwt.return))
     >>= fun _ -> !acc
 
-  let pull console =
+  let base_uuid () =
+    get_key [".config" ; "uuid"] >|= function
+    | None -> invalid_arg ".config/uuid is required in the remote git repository"
+    | Some n -> String.trim n
+
+  let pull () =
     new_task () >>= fun t ->
-    Lwt.return (C.log console "Pulling repository") >>= fun _ ->
+    Log.info (fun f -> f "pulling repository") ;
     Lwt.catch
       (fun () ->
-         Sync.pull_exn (t "Updating") upstream `Update >>= fun _ ->
-         Lwt.return (C.log console "Repository pulled"))
-      (fun e ->
-         let msg = Printf.sprintf "Fail pull %s" (Printexc.to_string e) in
-         Lwt.return (C.log console msg))
+         Sync.pull_exn (t "Updating") upstream `Update >|= fun _ ->
+         Log.info (fun f -> f "repository pulled"))
+      (fun e -> Lwt.return (Log.warn (fun f -> f "failed pull %s" (Printexc.to_string e))))
 
   let created_updated_ids commit key =
     new_task () >>= fun t ->
@@ -79,25 +89,27 @@ module Store (C: CONSOLE) (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = st
     | Some a, Some b -> Lwt.return (a, b)
     | _ -> raise (Invalid_argument "date_updated_last")
 
-  let fill_cache article_map =
+  let fill_cache base_uuid =
     let module C = Canopy_content in
-    let fold_fn key value acc =
+    let fn key value cache =
       value () >>= fun content ->
-      date_updated_created key >>= fun (updated, created) ->
-      let uri = String.concat "/" key in
-      match C.of_string ~uri ~content ~created ~updated with
-      | C.Ok article ->
-        article_map := KeyMap.add key article !article_map;
-        Lwt.return acc
-      | C.Error error ->
-        let error_msg = Printf.sprintf "Error while parsing %s: %s" uri error in
-        Lwt.return (error_msg::acc)
-      | C.Unknown ->
-        let error_msg = Printf.sprintf "%s : Unknown content type" uri in
-        Lwt.return (error_msg::acc)
+      date_updated_created key >|= fun (updated, created) ->
+      match key_type key with
+      | `Static -> KeyMap.add key (`Raw (content, updated)) cache
+      | `Config -> KeyMap.add key (`Config (String.trim content)) cache
+      | `Article ->
+        let uri = String.concat "/" key in
+        match C.of_string ~base_uuid ~uri ~content ~created ~updated with
+        | C.Ok article -> KeyMap.add key (`Article article) cache
+        | C.Error error ->
+          Log.warn (fun f -> f "Error while parsing %s: %s" uri error) ;
+          cache
+        | C.Unknown ->
+          Log.warn (fun f -> f "%s : Unknown content type" uri) ;
+          cache
     in
     new_task () >>= fun t ->
-    fold (t "Folding through values") fold_fn []
+    fold (t "Iterating over values") fn KeyMap.empty
 
   let last_commit_date () =
     new_task () >>= fun t  ->

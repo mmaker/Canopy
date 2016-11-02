@@ -1,7 +1,7 @@
 open Lwt
 open V1_LWT
 
-module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (DISK: KV_RO) (CLOCK: V1.CLOCK) (KEYS: KV_RO) = struct
+module Main (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (CLOCK: V1.CLOCK) (KEYS: KV_RO) = struct
 
   module TCP  = S.TCPV4
   module TLS  = Tls_mirage.Make (TCP)
@@ -10,60 +10,62 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
   module HTTP  = Cohttp_mirage.Server(TCP)
   module HTTPS = Cohttp_mirage.Server(TLS)
 
-  module D  = Canopy_dispatch.Make(HTTP)(C)(DISK)
-  module DS = Canopy_dispatch.Make(HTTPS)(C)(DISK)
+  module D  = Canopy_dispatch.Make(HTTP)
+  module DS = Canopy_dispatch.Make(HTTPS)
 
-  let log c fmt = Printf.ksprintf (C.log c) fmt
+  let src = Logs.Src.create "canopy-main" ~doc:"Canopy main logger"
+  module Log = (val Logs.src_log src : Logs.LOG)
 
-  let with_tls c cfg tcp f =
+  let with_tls cfg tcp f =
     let peer, port = TCP.get_dest tcp in
-    let log str = log c "[%s:%d] %s" (Ipaddr.V4.to_string peer) port str in
-    let with_tls_server k = TLS.server_of_flow cfg tcp >>= k in
-    with_tls_server @@ function
-    | `Error _ -> log "TLS failed"; TCP.close tcp
-    | `Ok tls  -> log "TLS ok"; f tls >>= fun () ->TLS.close tls
-    | `Eof     -> log "TLS eof"; TCP.close tcp
+    TLS.server_of_flow cfg tcp >>= function
+    | `Error e ->
+      Log.warn (fun f -> f "%s:%d TLS failed %s" (Ipaddr.V4.to_string peer) port (TLS.error_message e)) ;
+      TCP.close tcp
+    | `Ok tls ->
+      Log.info (fun f -> f "%s:%d TLS ok" (Ipaddr.V4.to_string peer) port);
+      f tls >>= fun () -> TLS.close tls
+    | `Eof ->
+      Log.info (fun f -> f "%s:%d TLS eof" (Ipaddr.V4.to_string peer) port);
+      TCP.close tcp
+
+  let with_tcp tcp f =
+    let peer, port = TCP.get_dest tcp in
+    Log.info (fun f -> f "%s:%d TCP established" (Ipaddr.V4.to_string peer) port);
+    f tcp >>= fun () -> TCP.close tcp
 
   let tls_init kv =
     X509.certificate kv `Default >|= fun cert ->
     Tls.Config.server ~certificates:(`Single cert) ()
 
-  let start console stack resolver conduit disk _clock keys _ _ =
-    let started = match Ptime.of_float_s (CLOCK.time ()) with
-      | None -> invalid_arg ("Ptime.of_float_s")
-      | Some t -> t
-    in
+  let start stack resolver conduit _clock keys _ =
     let module Context =
       ( struct
         let v _ = Lwt.return_some (resolver, conduit)
       end : Irmin_mirage.CONTEXT)
     in
-    let module Store = Canopy_store.Store(C)(Context)(Inflator) in
-    let open Canopy_utils in
-    let cache = ref (KeyMap.empty) in
-    let open Canopy_config in
-    let config = config () in
+    let module Store = Canopy_store.Store(Context)(Inflator) in
+    Store.pull () >>= fun () ->
+    Store.base_uuid () >>= fun uuid ->
+    Store.fill_cache uuid >>= fun new_cache ->
+    let cache = ref (new_cache) in
     let update_atom, atom =
-      Canopy_syndic.atom config Store.last_commit_date cache
+      Canopy_syndic.atom uuid Store.last_commit_date cache
     in
     let store_ops = {
       Canopy_dispatch.subkeys = Store.get_subkeys ;
       value = Store.get_key ;
       update =
         (fun () ->
-           cache := KeyMap.empty;
-           Store.pull console >>= fun () ->
-           Store.fill_cache cache >>= fun res ->
-           update_atom () >|= fun () ->
-           res);
+           Store.pull () >>= fun () ->
+           Store.fill_cache uuid >>= fun new_cache ->
+           cache := new_cache ;
+           update_atom ());
       last_commit = Store.last_commit_date ;
     } in
-    store_ops.Canopy_dispatch.update () >>= fun l ->
-    Lwt_list.iter_p (C.log_s console) l >>= fun () ->
-    let disp hdr =
-      `Dispatch (config, hdr, disk, store_ops, atom, cache, started)
-    in
-    (match config.tls_port with
+    update_atom () >>= fun () ->
+    let disp hdr = `Dispatch (hdr, store_ops, atom, cache) in
+    (match Canopy_config.tls_port () with
      | Some tls_port ->
        let redir uri =
          let https = Uri.with_scheme uri (Some "https") in
@@ -73,32 +75,31 @@ module Main  (C: CONSOLE) (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirag
          in
          Uri.with_port https port
        in
-       let http = HTTP.listen (D.create console (`Redirect redir)) in
-       S.listen_tcpv4 stack ~port:config.port http ;
-       C.log_s console
-         (let redirect =
-            let req = Uri.of_string "http://127.0.0.1" in
-            (* TODO: use own hostname instead of 127.0.0.1 once we have that *)
-            Uri.to_string (redir req)
-          in
-          Printf.sprintf "HTTP server listening on port %d (redirecting to %s)"
-            config.port redirect
-         ) >>= fun () ->
-       tls_init keys >>= fun tls_conf ->
+       let http_callback = HTTP.listen (D.create (`Redirect redir)) in
+       let http flow = with_tcp flow http_callback
+       and port = Canopy_config.port ()
+       in
+       S.listen_tcpv4 stack ~port http ;
+       Log.info (fun f -> f "HTTP server listening on port %d, \
+                             redirecting to https service on port %d"
+                    port tls_port) ;
+       tls_init keys >|= fun tls_conf ->
        let hdr = Cohttp.Header.init_with
            "Strict-Transport-Security" "max-age=31536000" (* in seconds, roughly a year *)
        in
-       let callback = HTTPS.listen (DS.create console (disp hdr)) in
-       let https flow = with_tls console tls_conf flow callback in
+       let callback = HTTPS.listen (DS.create (disp hdr)) in
+       let https flow = with_tls tls_conf flow callback in
        S.listen_tcpv4 stack ~port:tls_port https ;
-       C.log_s console
-         (Printf.sprintf "HTTPS server listening on port %d" tls_port)
+       Log.info (fun f -> f "HTTPS server listening on port %d" tls_port)
      | None ->
        let hdr = Cohttp.Header.init () in
-       let http = HTTP.listen (D.create console (disp hdr)) in
-       S.listen_tcpv4 stack ~port:config.port http ;
-       C.log_s console
-         (Printf.sprintf "HTTP server listening on port %d" config.port)
+       let http_callback = HTTP.listen (D.create (disp hdr)) in
+       let http flow = with_tcp flow http_callback
+       and port = Canopy_config.port ()
+       in
+       S.listen_tcpv4 stack ~port http ;
+       Log.info (fun f -> f "HTTP server listening on port %d" port) ;
+       Lwt.return_unit
     ) >>= fun () ->
     S.listen stack
 end
