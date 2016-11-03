@@ -89,6 +89,9 @@ module Store (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = struct
     | Some a, Some b -> Lwt.return (a, b)
     | _ -> raise (Invalid_argument "date_updated_last")
 
+  let check_redirect content =
+    Astring.String.cut "redirect: " content
+
   let fill_cache base_uuid =
     let module C = Canopy_content in
     let fn key value cache =
@@ -101,12 +104,19 @@ module Store (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = struct
         let uri = String.concat "/" key in
         match C.of_string ~base_uuid ~uri ~content ~created ~updated with
         | C.Ok article -> KeyMap.add key (`Article article) cache
-        | C.Error error ->
-          Log.warn (fun f -> f "Error while parsing %s: %s" uri error) ;
-          cache
         | C.Unknown ->
           Log.warn (fun f -> f "%s : Unknown content type" uri) ;
           cache
+        | C.Error error ->
+          begin
+            match check_redirect content with
+            | None ->
+              Log.warn (fun f -> f "Error while parsing %s: %s" uri error) ;
+              cache
+            | Some (_, path) ->
+              let uri = Uri.of_string path in
+              KeyMap.add key (`Redirect uri) cache
+          end
     in
     new_task () >>= fun t ->
     fold (t "Iterating over values") fn KeyMap.empty
