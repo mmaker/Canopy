@@ -98,6 +98,8 @@ module Make (S: Cohttp_lwt.Server) = struct
         | Some (`Raw (body, updated)) ->
           let headers = static_headers headers uri updated in
           respond_if_modified ~headers ~body ~updated
+        | Some (`Redirect uri) ->
+          moved_permanently uri
       end
 
   (* maybe this should be provided elsewhere *)
