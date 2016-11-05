@@ -90,7 +90,7 @@ module Store (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = struct
     | _ -> raise (Invalid_argument "date_updated_last")
 
   let check_redirect content =
-    Astring.String.cut "redirect: " content
+    Astring.String.cut ~sep:"redirect:" content
 
   let fill_cache base_uuid =
     let module C = Canopy_content in
@@ -114,7 +114,7 @@ module Store (CTX: Irmin_mirage.CONTEXT) (INFL: Git.Inflate.S) = struct
               Log.warn (fun f -> f "Error while parsing %s: %s" uri error) ;
               cache
             | Some (_, path) ->
-              let uri = Uri.of_string path in
+              let uri = Uri.of_string (String.trim path) in
               KeyMap.add key (`Redirect uri) cache
           end
     in
