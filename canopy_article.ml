@@ -20,7 +20,10 @@ let of_string base_uuid meta uri created updated content =
     let author = List.assoc "author" meta in
     let title = List.assoc "title" meta in
     let tags = assoc_opt "tags" meta |> map_opt split_tags [] |> List.map String.trim in
-    let abstract = assoc_opt "abstract" meta in
+    let abstract = match assoc_opt "abstract" meta with
+        | None -> None
+        | Some x -> Some (Omd.to_html (Omd.of_string x))
+    in
     let uuid =
       let open Uuidm in
       let stamp = Ptime.to_rfc3339 created in
@@ -53,7 +56,7 @@ let to_tyxml_listing_entry article =
   let author = "Written by " ^ article.author in
   let abstract = match article.abstract with
     | None -> []
-    | Some abstract -> [p ~a:[a_class ["list-group-item-text abstract"]] [pcdata abstract]] in
+    | Some abstract -> [p ~a:[a_class ["list-group-item-text abstract"]] [Unsafe.data abstract]] in
   let created = ptime_to_pretty_date article.created in
   let content = [
     h4 ~a:[a_class ["list-group-item-heading"]] [pcdata article.title];
