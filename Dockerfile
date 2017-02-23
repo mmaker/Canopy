@@ -17,6 +17,7 @@ COPY . /src
 ADD assets /src/assets
 RUN sudo chown -R opam:opam /src; sudo chmod -R 700 /src
 RUN opam config exec -- mirage configure
+RUN opam config exec -- make depend
 RUN opam config exec -- make
 RUN sudo mkdir /tmp/assets ; sudo chown opam:opam /tmp/assets ; ./populate.sh /tmp/assets
 EXPOSE 8080
