@@ -37,11 +37,7 @@ module Main (S: STACKV4) (RES: Resolver_lwt.S) (CON: Conduit_mirage.S) (CLOCK: P
     Tls.Config.server ~certificates:(`Single cert) ()
 
   let start stack resolver conduit _clock keys _ =
-    let module Context =
-      ( struct
-        let v _ = Lwt.return_some (resolver, conduit)
-      end : Irmin_mirage.CONTEXT)
-    in
+    let (module Context) = Irmin_mirage.context (resolver, conduit) in
     let module Store = Canopy_store.Store(Context)(Inflator) in
     Store.pull () >>= fun () ->
     Store.base_uuid () >>= fun uuid ->

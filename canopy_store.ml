@@ -5,8 +5,8 @@ open Canopy_utils
 module Store (CTX: Irmin_git.IO) (INFL: Git.Inflate.S) = struct
 
   module Hash = Irmin.Hash.SHA1
-  module Mirage_git_memory = Irmin_mirage.Git.Mem(CTX)(INFL)
-  module Store = Mirage_git_memory(Irmin.Contents.String)(Irmin.Ref.String)(Hash)
+  module Mirage_git_memory = Irmin_mirage.Git.Mem.KV(CTX)(INFL)
+  module Store = Mirage_git_memory(Irmin.Contents.String)
   module Sync = Irmin.Sync(Store)
   module Topological = Graph.Topological.Make(Store.History)
 
@@ -14,15 +14,36 @@ module Store (CTX: Irmin_git.IO) (INFL: Git.Inflate.S) = struct
   module Log = (val Logs.src_log src : Logs.LOG)
 
   let store_config = Irmin_mem.config ()
-  let task s = Irmin.Task.create ~date:0L ~owner:"Server" s
-  let repo _ = Store.Repo.create store_config
+  let repo _ = Store.Repo.v store_config
 
-  let new_task _ =
+  let store () =
     match remote_branch () with
-    | None -> repo () >>= Store.master task
-    | Some branch -> repo () >>= Store.of_branch_id task branch
+    | None        -> repo () >>= Store.master
+    | Some branch -> repo () >>= fun r -> Store.of_branch r branch
 
   let upstream = Irmin.remote_uri (remote_uri ())
+
+  let walk t root =
+    let todo = ref [] in
+    let all = ref [] in
+    let rec aux () = match !todo with
+      | []      -> Lwt.return_unit
+      | k::rest ->
+        todo := rest;
+        Store.list t k >>= fun childs ->
+        Lwt_list.iter_p (fun (s, c) ->
+            let k = k @ [s] in
+            match c with
+            | `Node     -> todo := k :: !todo; Lwt.return_unit
+            | `Contents ->
+              Store.get t k >|= fun v ->
+              all := (k, v) :: !all
+          ) childs >>=
+        aux
+    in
+    todo := [root];
+    aux () >|= fun () ->
+    !all
 
   let key_type = function
     | x::_ when x = "static" -> `Static
@@ -30,21 +51,23 @@ module Store (CTX: Irmin_git.IO) (INFL: Git.Inflate.S) = struct
     | _ -> `Article
 
   let get_subkeys key =
-    new_task () >>= fun t ->
-    Store.list (t "Reading posts") key >|= fun keys ->
-    List.filter (fun k -> match key_type k with `Article -> true | _ -> false) keys
+    store () >>= fun t ->
+    walk t key >|= fun keys ->
+    List.fold_left (fun acc (k, _) ->
+        if key_type k = `Article then k :: acc else acc
+      ) [] keys
 
   let get_key key =
-    new_task () >>= fun t ->
-    Store.read (t "Read post") key
+    store () >>= fun t ->
+    Store.find t key
 
   let fold t fn acc =
-    let acc = ref (Lwt.return acc) in
     let mut = Lwt_mutex.create () in
-    Store.iter t (fun k v ->
-      Lwt_mutex.with_lock mut
-                 (fun _ -> !acc >>= fun acc' -> (acc := (fn k v acc')) |> Lwt.return))
-    >>= fun _ -> !acc
+    walk t [] >>= fun all ->
+    Lwt_list.fold_left_s (fun acc (k, v) ->
+        Lwt_mutex.with_lock mut (fun () -> acc >|= fn k v)
+      ) (Lwt.return acc) all
+    >>= fun x -> x
 
   let base_uuid () =
     get_key [".config" ; "uuid"] >|= function
@@ -52,25 +75,26 @@ module Store (CTX: Irmin_git.IO) (INFL: Git.Inflate.S) = struct
     | Some n -> String.trim n
 
   let pull () =
-    new_task () >>= fun t ->
+    store () >>= fun t ->
     Log.info (fun f -> f "pulling repository") ;
     Lwt.catch
       (fun () ->
-         Sync.pull_exn (t "Updating") upstream `Update >|= fun _ ->
+         Sync.pull_exn t upstream `Set >|= fun _ ->
          Log.info (fun f -> f "repository pulled"))
-      (fun e -> Lwt.return (Log.warn (fun f -> f "failed pull %s" (Printexc.to_string e))))
+      (fun e ->
+         Log.warn (fun f -> f "failed pull %a" Fmt.exn e);
+         Lwt.return ())
 
   let created_updated_ids commit key =
-    new_task () >>= fun t ->
-    repo () >>= fun repo ->
-    Store.history (t "Reading history") >>= fun history ->
+    store () >>= fun t ->
+    Store.history t >>= fun history ->
     let aux commit_id acc =
-      Store.of_commit_id (Irmin.Task.none) commit_id repo >>= fun store ->
+      Store.of_commit commit_id >>= fun store ->
       acc >>= fun (created, updated, last) ->
-      Store.read (store ()) key >|= fun data ->
+      Store.find store key >|= fun data ->
       match data, last with
-      | None, None -> (created, updated, last)
-      | None, Some _ -> (created, updated, last)
+      | None  , None -> (created, updated, last)
+      | None  , Some _ -> (created, updated, last)
       | Some x, Some y when x = y -> (created, updated, last)
       | Some _, None -> (commit_id, commit_id, data)
       | Some _, Some _ -> (created, commit_id, data)
@@ -78,13 +102,14 @@ module Store (CTX: Irmin_git.IO) (INFL: Git.Inflate.S) = struct
     Topological.fold aux history (Lwt.return (commit, commit, None))
 
   let date_updated_created key =
-    new_task () >>= fun t  ->
-    repo () >>= fun repo ->
-    Store.head_exn (t "Finding head") >>= fun head ->
+    store () >>= fun t  ->
+    Store.Head.get t >>= fun head ->
     created_updated_ids head key >>= fun (created_commit_id, updated_commit_id, _) ->
-    let to_ptime task = Irmin.Task.date task |> Int64.to_float |> Ptime.of_float_s in
-    Store.Repo.task_of_commit_id repo updated_commit_id >>= fun updated ->
-    Store.Repo.task_of_commit_id repo created_commit_id >>= fun created ->
+    let to_ptime info =
+      Irmin.Info.date info |> Int64.to_float |> Ptime.of_float_s
+    in
+    Store.Commit.info updated_commit_id |> fun updated ->
+    Store.Commit.info created_commit_id |> fun created ->
     match to_ptime updated, to_ptime created with
     | Some a, Some b -> Lwt.return (a, b)
     | _ -> raise (Invalid_argument "date_updated_last")
@@ -96,8 +121,7 @@ module Store (CTX: Irmin_git.IO) (INFL: Git.Inflate.S) = struct
 
   let fill_cache base_uuid =
     let module C = Canopy_content in
-    let fn key value cache =
-      value () >>= fun content ->
+    let fn key content cache =
       date_updated_created key >|= fun (updated, created) ->
       match key_type key with
       | `Static -> KeyMap.add key (`Raw (content, updated)) cache
@@ -110,24 +134,21 @@ module Store (CTX: Irmin_git.IO) (INFL: Git.Inflate.S) = struct
           Log.warn (fun f -> f "%s : Unknown content type" uri) ;
           cache
         | C.Error error ->
-          begin
-            match check_redirect content with
-            | None ->
-              Log.warn (fun f -> f "Error while parsing %s: %s" uri error) ;
-              cache
-            | Some uri -> KeyMap.add key (`Redirect uri) cache
-          end
+          match check_redirect content with
+          | None ->
+            Log.warn (fun f -> f "Error while parsing %s: %s" uri error) ;
+            cache
+          | Some uri -> KeyMap.add key (`Redirect uri) cache
     in
-    new_task () >>= fun t ->
-    fold (t "Iterating over values") fn KeyMap.empty
+    store () >>= fun t ->
+    fold t fn KeyMap.empty
 
   let last_commit_date () =
-    new_task () >>= fun t  ->
-    repo () >>= fun repo ->
-    Store.head_exn (t "Finding head") >>= fun head ->
-    Store.Repo.task_of_commit_id repo head >>= fun task ->
-    let date = Irmin.Task.date task |> Int64.to_float in
+    store () >>= fun t  ->
+    Store.Head.get t >>= fun head ->
+    Store.Commit.info head |> fun info ->
+    let date = Irmin.Info.date info |> Int64.to_float in
     Ptime.of_float_s date |> function
-      | Some o -> Lwt.return o
-      | None -> raise (Invalid_argument "date_updated_last")
+    | Some o -> Lwt.return o
+    | None -> raise (Invalid_argument "date_updated_last")
 end
