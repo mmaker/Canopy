@@ -11,11 +11,14 @@ WORKDIR /src
 ADD tls /src/tls
 RUN sudo chown -R opam:opam /src; sudo chmod -R 700 /src
 ENV TMP /tmp
+RUN opam pin add tyxml --dev
+RUN opam remote add tmp https://github.com/samoht/opam-repository.git#irmin
 RUN opam install -y -j2 mirage
 COPY . /src
 ADD assets /src/assets
 RUN sudo chown -R opam:opam /src; sudo chmod -R 700 /src
 RUN opam config exec -- mirage configure
+RUN opam config exec -- make depend
 RUN opam config exec -- make
 RUN sudo mkdir /tmp/assets ; sudo chown opam:opam /tmp/assets ; ./populate.sh /tmp/assets
 EXPOSE 8080
