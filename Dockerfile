@@ -12,7 +12,6 @@ ADD tls /src/tls
 RUN sudo chown -R opam:opam /src; sudo chmod -R 700 /src
 ENV TMP /tmp
 RUN opam pin add tyxml --dev
-RUN opam remote add tmp https://github.com/samoht/opam-repository.git#irmin
 RUN opam install -y -j2 mirage
 COPY . /src
 ADD assets /src/assets
